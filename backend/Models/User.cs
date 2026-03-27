@@ -26,6 +26,10 @@ namespace InternshipManagement.API.Models
         public string? Department { get; set; }
         public int? CurrentSemester { get; set; }
         public string? Photo { get; set; }
+        public string? EligibilityStatus { get; set; }
+        public int? PassedThirdYearCourses { get; set; }
+        public int? RequiredThirdYearCourses { get; set; }
+        public DateTime? TranscriptVerifiedAt { get; set; }
 
         // Navigation Properties for Student
         public ICollection<Course>? Courses { get; set; }

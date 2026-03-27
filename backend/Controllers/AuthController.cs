@@ -42,7 +42,11 @@ namespace InternshipManagement.API.Controllers
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
-                photo = user.Photo
+                photo = user.Photo,
+                eligibilityStatus = user.EligibilityStatus,
+                passedThirdYearCourses = user.PassedThirdYearCourses,
+                requiredThirdYearCourses = user.RequiredThirdYearCourses,
+                transcriptVerifiedAt = user.TranscriptVerifiedAt
             };
 
             // Giriş yapan kullanıcı id'sini cookie olarak sakla (frontend localStorage'a ihtiyaç duymasın)
@@ -88,7 +92,11 @@ namespace InternshipManagement.API.Controllers
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
-                photo = user.Photo
+                photo = user.Photo,
+                eligibilityStatus = user.EligibilityStatus,
+                passedThirdYearCourses = user.PassedThirdYearCourses,
+                requiredThirdYearCourses = user.RequiredThirdYearCourses,
+                transcriptVerifiedAt = user.TranscriptVerifiedAt
             };
 
             // Kayıttan sonra kullanıcıyı otomatik oturum açmış kabul et (cookie yaz)
@@ -130,7 +138,11 @@ namespace InternshipManagement.API.Controllers
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
-                photo = user.Photo
+                photo = user.Photo,
+                eligibilityStatus = user.EligibilityStatus,
+                passedThirdYearCourses = user.PassedThirdYearCourses,
+                requiredThirdYearCourses = user.RequiredThirdYearCourses,
+                transcriptVerifiedAt = user.TranscriptVerifiedAt
             });
         }
 

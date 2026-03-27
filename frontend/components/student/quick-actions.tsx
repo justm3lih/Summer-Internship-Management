@@ -24,12 +24,14 @@ export function QuickActions({ eligibilityStatus }: QuickActionsProps) {
             </Button>
           </Link>
         )}
-        <Link href="/student/transcript">
-          <Button className="w-full justify-start" variant="outline">
-            <FileText className="mr-2 h-4 w-4" />
-            Upload/Update Transcript
-          </Button>
-        </Link>
+        {eligibilityStatus !== "eligible" && (
+          <Link href="/student/transcript">
+            <Button className="w-full justify-start" variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Upload/Update Transcript
+            </Button>
+          </Link>
+        )}
         <Link href="/student/logbook">
           <Button className="w-full justify-start" variant="outline">
             <BookOpen className="mr-2 h-4 w-4" />

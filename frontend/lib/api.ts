@@ -25,6 +25,10 @@ export async function login(email: string, password: string): Promise<User | nul
     department: data.department,
     currentSemester: data.currentSemester,
     photo: data.photo,
+    eligibilityStatus: data.eligibilityStatus,
+    passedThirdYearCourses: data.passedThirdYearCourses,
+    requiredThirdYearCourses: data.requiredThirdYearCourses,
+    transcriptVerifiedAt: data.transcriptVerifiedAt,
   };
 }
 
@@ -60,6 +64,10 @@ export async function register(data: {
     department: body.department,
     currentSemester: body.currentSemester,
     photo: body.photo,
+    eligibilityStatus: body.eligibilityStatus,
+    passedThirdYearCourses: body.passedThirdYearCourses,
+    requiredThirdYearCourses: body.requiredThirdYearCourses,
+    transcriptVerifiedAt: body.transcriptVerifiedAt,
   };
   return { success: true, user };
 }
@@ -75,6 +83,10 @@ function mapUser(data: Record<string, unknown>): User {
     department: data.department as string | undefined,
     currentSemester: data.currentSemester as number | undefined,
     photo: data.photo as string | undefined,
+    eligibilityStatus: data.eligibilityStatus as User["eligibilityStatus"],
+    passedThirdYearCourses: data.passedThirdYearCourses as number | undefined,
+    requiredThirdYearCourses: data.requiredThirdYearCourses as number | undefined,
+    transcriptVerifiedAt: data.transcriptVerifiedAt as string | undefined,
   };
 }
 
@@ -111,7 +123,18 @@ export type UpdateProfileResult = { success: true; user: User } | { success: fal
 /** Profil güncelle (ad, e-posta, öğrenci no, bölüm, dönem, fotoğraf) - PATCH /api/users/{id} */
 export async function updateProfile(
   userId: string,
-  data: { name?: string; email?: string; studentId?: string; department?: string; currentSemester?: number; photo?: string }
+  data: {
+    name?: string;
+    email?: string;
+    studentId?: string;
+    department?: string;
+    currentSemester?: number;
+    photo?: string;
+    eligibilityStatus?: User["eligibilityStatus"];
+    passedThirdYearCourses?: number;
+    requiredThirdYearCourses?: number;
+    transcriptVerifiedAt?: string;
+  }
 ): Promise<UpdateProfileResult> {
   const res = await fetch(`${getApiUrl()}/api/users/${userId}`, {
     method: "PATCH",

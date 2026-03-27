@@ -82,7 +82,7 @@ export function AppLayout({ children, requiredRole }: AppLayoutProps) {
         userSettingsLink={user.role === "student" ? getSettingsLink() : undefined}  // Şimdilik sadece öğrenci için ayarlar linki
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar role={user.role} />
+        <Sidebar role={user.role} eligibilityStatus={user.eligibilityStatus} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:ml-0 transition-all duration-300 relative z-0">
           {children}
         </main>

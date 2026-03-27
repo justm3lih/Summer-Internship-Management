@@ -1,38 +1,37 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApplicationStatus } from "@/types";
 import { CheckCircle2, Clock, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InternshipTimelineProps {
-  status: ApplicationStatus;
+  transcriptVerified: boolean;
 }
 
 const timelineSteps: Array<{
-  key: ApplicationStatus;
+  key: string;
   label: string;
   description: string;
 }> = [
-  { key: "not_applied", label: "Not Applied", description: "Start your application" },
-  { key: "pending", label: "Applied", description: "Awaiting coordinator approval" },
-  { key: "approved", label: "Approved", description: "Ready to begin internship" },
-  { key: "ongoing", label: "Ongoing", description: "Currently in progress" },
-  { key: "completed", label: "Completed", description: "Internship finished" },
+  { key: "transcript_verified", label: "Transcript Verified", description: "Your transcript is approved for internship eligibility" },
+  { key: "internship_approved", label: "Internship Approved", description: "Wait for the internship approval stage" },
+  { key: "logbook_completed", label: "Logbook Completed", description: "This step will be activated after the logbook workflow is finished" },
+  { key: "final_report_approved", label: "Final Report Approved", description: "This step will be activated after the final report review" },
+  { key: "completed", label: "Completed", description: "All internship workflow steps are finished" },
 ];
 
-export function InternshipTimeline({ status }: InternshipTimelineProps) {
-  const currentStepIndex = timelineSteps.findIndex((step) => step.key === status);
-  const activeIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
+export function InternshipTimeline({ transcriptVerified }: InternshipTimelineProps) {
+  const completedIndex = transcriptVerified ? 0 : -1;
+  const currentIndex = transcriptVerified ? 1 : 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Internship Status Timeline</CardTitle>
+        <CardTitle>Internship Process Timeline</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {timelineSteps.map((step, index) => {
-            const isActive = index <= activeIndex;
-            const isCurrent = index === activeIndex;
+            const isCompleted = completedIndex >= 0 && index <= completedIndex;
+            const isCurrent = index === currentIndex;
 
             return (
               <div key={step.key} className="flex items-start gap-4">
@@ -40,12 +39,14 @@ export function InternshipTimeline({ status }: InternshipTimelineProps) {
                   <div
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-                      isActive
+                      isCompleted
                         ? "border-primary bg-primary text-primary-foreground"
+                        : isCurrent
+                        ? "border-primary bg-background text-primary"
                         : "border-muted bg-muted text-muted-foreground"
                     )}
                   >
-                    {isActive && index < activeIndex ? (
+                    {isCompleted ? (
                       <CheckCircle2 className="h-5 w-5" />
                     ) : (
                       <Circle className="h-5 w-5" />
@@ -55,7 +56,7 @@ export function InternshipTimeline({ status }: InternshipTimelineProps) {
                     <div
                       className={cn(
                         "h-12 w-0.5",
-                        isActive ? "bg-primary" : "bg-muted"
+                        isCompleted ? "bg-primary" : "bg-muted"
                       )}
                     />
                   )}
@@ -65,7 +66,7 @@ export function InternshipTimeline({ status }: InternshipTimelineProps) {
                     <h4
                       className={cn(
                         "font-semibold",
-                        isCurrent ? "text-primary" : isActive ? "text-foreground" : "text-muted-foreground"
+                        isCurrent ? "text-primary" : isCompleted ? "text-foreground" : "text-muted-foreground"
                       )}
                     >
                       {step.label}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/common/page-header";
 import { ProfileCard } from "@/components/student/profile-card";
 import { EligibilityStatusCardEnhanced } from "@/components/student/eligibility-status-card-enhanced";
@@ -9,6 +10,7 @@ import { DashboardStats } from "@/components/student/dashboard-stats";
 import { QuickActions } from "@/components/student/quick-actions";
 import { NotificationsFeed } from "@/components/student/notifications-feed";
 import { AIWidget } from "@/components/student/ai-widget";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   demoEligibility,
   demoApplications,
@@ -18,6 +20,7 @@ import {
 import { ApplicationStatus } from "@/types";
 import { getMe, getProfile } from "@/lib/api";
 import type { User } from "@/types";
+import { AlertTriangle } from "lucide-react";
 
 /** Öğrenci ana sayfası: profil API'den çekilir, diğer bloklar demo veri kullanır */
 export default function StudentDashboard() {
@@ -26,6 +29,9 @@ export default function StudentDashboard() {
   const internshipStatus: ApplicationStatus =
     demoApplications.find((app) => app.status === "approved" || app.status === "ongoing")
       ?.status || "pending";
+  const eligibilityStatus = profileUser?.eligibilityStatus;
+  const passedCourses = profileUser?.passedThirdYearCourses ?? 0;
+  const requiredCourses = profileUser?.requiredThirdYearCourses ?? 5;
 
   // Giriş yapan kullanıcıyı auth/me ile bul, sonra API'den güncel profil çek (ProfileCard için)
   useEffect(() => {
@@ -60,16 +66,37 @@ export default function StudentDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-2 space-y-4">
           {profileUser && <ProfileCard user={profileUser} />}
-          <EligibilityStatusCardEnhanced
-            status={demoEligibility.status}
-            passedCourses={demoEligibility.passedCourses}
-            requiredCourses={demoEligibility.requiredCourses}
-          />
-          <InternshipTimeline status={internshipStatus} />
+          {eligibilityStatus ? (
+            <EligibilityStatusCardEnhanced
+              status={eligibilityStatus}
+              passedCourses={passedCourses}
+              requiredCourses={requiredCourses}
+            />
+          ) : (
+            <Card className="border-yellow-300 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                  <AlertTriangle className="h-5 w-5" />
+                  Transcript Verification Required
+                </CardTitle>
+                <CardDescription className="text-yellow-700 dark:text-yellow-300">
+                  Before the internship process can begin, you need to complete transcript eligibility verification.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-sm text-yellow-800 dark:text-yellow-200">
+                Go to the{" "}
+                <Link href="/student/transcript" className="font-semibold underline underline-offset-4">
+                  transcript page
+                </Link>
+                , enter your third-year course grades, and calculate your eligibility first.
+              </CardContent>
+            </Card>
+          )}
+          {eligibilityStatus === "eligible" && <InternshipTimeline transcriptVerified />}
         </div>
         <div className="space-y-4">
           <AIWidget onOpenChat={handleOpenChat} />
-          <QuickActions eligibilityStatus={demoEligibility.status} />
+          <QuickActions eligibilityStatus={eligibilityStatus ?? "not_eligible"} />
         </div>
       </div>
 

@@ -38,7 +38,11 @@ namespace InternshipManagement.API.Controllers
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
-                photo = user.Photo
+                photo = user.Photo,
+                eligibilityStatus = user.EligibilityStatus,
+                passedThirdYearCourses = user.PassedThirdYearCourses,
+                requiredThirdYearCourses = user.RequiredThirdYearCourses,
+                transcriptVerifiedAt = user.TranscriptVerifiedAt
             });
         }
 
@@ -55,6 +59,10 @@ namespace InternshipManagement.API.Controllers
             if (request.Department != null) user.Department = request.Department;
             if (request.CurrentSemester.HasValue) user.CurrentSemester = request.CurrentSemester;
             if (request.Photo != null) user.Photo = request.Photo;
+            if (request.EligibilityStatus != null) user.EligibilityStatus = request.EligibilityStatus;
+            if (request.PassedThirdYearCourses.HasValue) user.PassedThirdYearCourses = request.PassedThirdYearCourses;
+            if (request.RequiredThirdYearCourses.HasValue) user.RequiredThirdYearCourses = request.RequiredThirdYearCourses;
+            if (request.TranscriptVerifiedAt.HasValue) user.TranscriptVerifiedAt = request.TranscriptVerifiedAt;
 
             // E-posta değiştiriliyorsa başka kullanıcıda kullanılmıyor mu kontrol et
             if (request.Email != null)
@@ -78,7 +86,11 @@ namespace InternshipManagement.API.Controllers
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
-                photo = user.Photo
+                photo = user.Photo,
+                eligibilityStatus = user.EligibilityStatus,
+                passedThirdYearCourses = user.PassedThirdYearCourses,
+                requiredThirdYearCourses = user.RequiredThirdYearCourses,
+                transcriptVerifiedAt = user.TranscriptVerifiedAt
             });
         }
 
@@ -114,6 +126,10 @@ namespace InternshipManagement.API.Controllers
         public string? Department { get; set; }
         public int? CurrentSemester { get; set; }
         public string? Photo { get; set; }
+        public string? EligibilityStatus { get; set; }
+        public int? PassedThirdYearCourses { get; set; }
+        public int? RequiredThirdYearCourses { get; set; }
+        public DateTime? TranscriptVerifiedAt { get; set; }
     }
 
     // Şifre değiştirme isteği body'si

@@ -19,6 +19,10 @@ export interface User {
   department?: string;
   currentSemester?: number;
   photo?: string;
+  eligibilityStatus?: EligibilityStatus;
+  passedThirdYearCourses?: number;
+  requiredThirdYearCourses?: number;
+  transcriptVerifiedAt?: string;
 }
 
 export interface EligibilityCheck {

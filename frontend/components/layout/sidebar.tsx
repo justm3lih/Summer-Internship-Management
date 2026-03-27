@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { UserRole } from "@/types";
+import { EligibilityStatus, UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -20,6 +20,7 @@ import {
   ClipboardList,
   UserCheck,
   Database,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -30,6 +31,7 @@ interface SidebarItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  showCompletedMark?: boolean;
 }
 
 const studentMenu: SidebarItem[] = [
@@ -69,10 +71,14 @@ const adminMenu: SidebarItem[] = [
   { title: "System Config", href: "/admin/config", icon: Settings },
 ];
 
-const getMenuByRole = (role: UserRole): SidebarItem[] => {
+const getMenuByRole = (role: UserRole, eligibilityStatus?: EligibilityStatus): SidebarItem[] => {
   switch (role) {
     case "student":
-      return studentMenu;
+      return studentMenu.map((item) =>
+        item.href === "/student/transcript"
+          ? { ...item, showCompletedMark: eligibilityStatus === "eligible" }
+          : item
+      );
     case "coordinator":
       return coordinatorMenu;
     case "company":
@@ -86,11 +92,12 @@ const getMenuByRole = (role: UserRole): SidebarItem[] => {
 
 interface SidebarProps {
   role: UserRole;
+  eligibilityStatus?: EligibilityStatus;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
   const pathname = usePathname();
-  const menuItems = getMenuByRole(role);
+  const menuItems = getMenuByRole(role, eligibilityStatus);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -148,13 +155,16 @@ export function Sidebar({ role }: SidebarProps) {
             />
             <span
               className={cn(
-                "whitespace-nowrap transition-all duration-300 ease-in-out",
+                "whitespace-nowrap transition-all duration-300 ease-in-out flex items-center gap-2",
                 isCollapsed
                   ? "opacity-0 w-0 overflow-hidden ml-0"
                   : "opacity-100 w-auto ml-0"
               )}
             >
               {item.title}
+              {item.showCompletedMark && (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              )}
             </span>
           </Link>
         );

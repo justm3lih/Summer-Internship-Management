@@ -1,202 +1,192 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/common/file-upload";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useToastContext } from "@/components/providers/toast-provider";
-import { Upload, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
-import { demoTranscriptHistory } from "@/lib/demo-data";
-import { format } from "date-fns";
+import { getMe, getProfile, updateProfile } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const thirdYearSoftwareCourses = [
+  { code: "CMPE313", name: "Object Oriented Programming" },
+  { code: "CMPE343", name: "Database Management Systems and Programming-I" },
+  { code: "CMPE351", name: "Operating Systems" },
+  { code: "SWEN301", name: "Software Design and Architecture" },
+  { code: "CMPE332", name: "Fundamentals of Computer Networks" },
+  { code: "SWEN302", name: "Software Quality Assurance and Testing" },
+  { code: "SWEN304", name: "Software Process and Management" },
+  { code: "SWENXX2", name: "Field Elective" },
+] as const;
+
+const gradeOptions = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F"] as const;
+const passingGrades = new Set(["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"]);
 
 export default function TranscriptPage() {
+  const router = useRouter();
   const { showToast } = useToastContext();
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadHistory, setUploadHistory] = useState(demoTranscriptHistory);
+  const [courseGrades, setCourseGrades] = useState<Record<string, string>>(
+    Object.fromEntries(thirdYearSoftwareCourses.map((course) => [course.code, ""]))
+  );
+  const [result, setResult] = useState<{
+    passedCourses: number;
+    failedCourses: number;
+    status: "eligible" | "not_eligible";
+  } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && (droppedFile.type === "application/pdf" || droppedFile.type.startsWith("image/"))) {
-      setFile(droppedFile);
-    } else {
-      showToast("Please upload a PDF or image file", "error");
+  const allGradesSelected = thirdYearSoftwareCourses.every((course) => courseGrades[course.code]);
+
+  useEffect(() => {
+    if (result) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [showToast]);
+  }, [result]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-  }, []);
+  useEffect(() => {
+    getMe()
+      .then((me) => {
+        if (!me?.id) return;
+        return getProfile(me.id).then((user) => {
+          if (user?.eligibilityStatus === "eligible") {
+            router.replace("/student");
+          }
+        });
+      })
+      .catch(() => {});
+  }, [router]);
 
-  const handleFileSelect = (selectedFile: File | null) => {
-    setFile(selectedFile);
-  };
+  const handleCalculateEligibility = async () => {
+    const passedCourses = thirdYearSoftwareCourses.filter((course) =>
+      passingGrades.has(courseGrades[course.code])
+    ).length;
 
-  const handleUpload = async () => {
-    if (!file) {
-      showToast("Please select a file first", "error");
+    const nextResult = {
+      passedCourses,
+      failedCourses: thirdYearSoftwareCourses.length - passedCourses,
+      status: passedCourses >= 5 ? "eligible" : "not_eligible",
+    } as const;
+
+    setResult(nextResult);
+
+    setIsSaving(true);
+    const me = await getMe();
+    if (!me?.id) {
+      setIsSaving(false);
+      showToast("Could not find the current user.", "error");
       return;
     }
 
-    setIsUploading(true);
-    
-    // Simulate upload
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsUploading(false);
-    setIsProcessing(true);
-    showToast("File uploaded successfully! Processing...", "success");
+    const saveResult = await updateProfile(me.id, {
+      eligibilityStatus: nextResult.status,
+      passedThirdYearCourses: nextResult.passedCourses,
+      requiredThirdYearCourses: 5,
+      transcriptVerifiedAt: new Date().toISOString(),
+    });
 
-    // Simulate processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    setIsProcessing(false);
-    
-    // Add to history
-    const newEntry = {
-      id: Date.now().toString(),
-      uploadedDate: new Date(),
-      fileName: file.name,
-      status: "processed" as const,
-      coursesDetected: 6,
-      eligibilityStatus: "eligible" as const,
-    };
-    
-    setUploadHistory([newEntry, ...uploadHistory]);
-    setFile(null);
-    showToast("Transcript processed successfully! Eligibility updated.", "success");
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "processed":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case "processing":
-        return <Clock className="h-4 w-4 text-yellow-500 animate-spin" />;
-      default:
-        return <XCircle className="h-4 w-4 text-red-500" />;
+    setIsSaving(false);
+    if (saveResult.success) {
+      showToast("Transcript eligibility saved.", "success");
+    } else {
+      showToast(saveResult.message, "error");
     }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Upload / Update Transcript"
-        description="Upload your transcript for eligibility verification"
+        title="Manual Transcript Entry"
+        description="Enter your grades for the fixed third-year Software Engineering courses"
       />
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload Transcript</CardTitle>
-            <CardDescription>
-              Drag and drop or select a PDF or image file
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                file
-                  ? "border-primary bg-primary/5"
-                  : "border-muted hover:border-primary/50"
-              }`}
-            >
-              {file ? (
-                <div className="space-y-2">
-                  <FileText className="h-12 w-12 mx-auto text-primary" />
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop your transcript here
-                  </p>
-                  <p className="text-xs text-muted-foreground">or</p>
-                </div>
-              )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Third-Year Course Grades</CardTitle>
+          <CardDescription>
+            Select a grade for each fixed course, then calculate internship eligibility.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {result && (
+            <div ref={resultRef} className="rounded-lg border p-4">
+              <div className="flex items-center gap-2">
+                {result.status === "eligible" ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600" />
+                )}
+                <p className={`font-semibold ${result.status === "eligible" ? "text-foreground" : "text-lg text-red-600"}`}>
+                  {result.status === "eligible" ? "Eligible for Internship" : "Not Eligible for Internship"}
+                </p>
+              </div>
+              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                <p>Department: Software Engineering</p>
+                <p>Passed courses: {result.passedCourses} / {thirdYearSoftwareCourses.length}</p>
+                <p>Failed courses: {result.failedCourses} / {thirdYearSoftwareCourses.length}</p>
+                <p>Rule: At least 5 passed third-year courses are required.</p>
+              </div>
             </div>
+          )}
 
-            <FileUpload
-              label="Select File"
-              accept=".pdf,.png,.jpg,.jpeg"
-              file={file}
-              onChange={handleFileSelect}
-            />
-
-            {isProcessing && (
-              <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 p-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-600 animate-spin" />
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    Processing transcript... This may take a few moments.
-                  </p>
+          <div className="space-y-4">
+            {thirdYearSoftwareCourses.map((course) => (
+              <div
+                key={course.code}
+                className="rounded-lg border p-4"
+              >
+                <div className="space-y-3 md:grid md:grid-cols-[140px_1fr_180px] md:items-center md:gap-4 md:space-y-0">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Course Code</Label>
+                    <p className="font-medium">{course.code}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Course Name</Label>
+                    <p className="font-medium">{course.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Grade</Label>
+                    <Select
+                      value={courseGrades[course.code]}
+                      onValueChange={(value) =>
+                        setCourseGrades((prev) => ({ ...prev, [course.code]: value }))
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gradeOptions.map((grade) => (
+                          <SelectItem key={grade} value={grade}>
+                            {grade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
+          </div>
 
-            <Button
-              onClick={handleUpload}
-              disabled={!file || isUploading || isProcessing}
-              className="w-full"
-            >
-              {isUploading ? "Uploading..." : isProcessing ? "Processing..." : "Upload & Process"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload History</CardTitle>
-            <CardDescription>Previous transcript uploads and results</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {uploadHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No upload history
-                </p>
-              ) : (
-                uploadHistory.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex items-start gap-3 rounded-lg border p-3"
-                  >
-                    <div className="flex-shrink-0 mt-1">
-                      {getStatusIcon(entry.status)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {entry.fileName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(entry.uploadedDate, "MMM dd, yyyy HH:mm")}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {entry.coursesDetected} courses detected
-                        </span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {entry.eligibilityStatus}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Button
+            className="w-full"
+            onClick={handleCalculateEligibility}
+            disabled={!allGradesSelected || isSaving}
+          >
+            {isSaving ? "Saving..." : "Calculate Eligibility"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
