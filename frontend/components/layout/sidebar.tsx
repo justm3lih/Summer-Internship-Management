@@ -20,7 +20,6 @@ import {
   ClipboardList,
   UserCheck,
   Database,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -31,7 +30,6 @@ interface SidebarItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  showCompletedMark?: boolean;
 }
 
 const studentMenu: SidebarItem[] = [
@@ -74,11 +72,9 @@ const adminMenu: SidebarItem[] = [
 const getMenuByRole = (role: UserRole, eligibilityStatus?: EligibilityStatus): SidebarItem[] => {
   switch (role) {
     case "student":
-      return studentMenu.map((item) =>
-        item.href === "/student/transcript"
-          ? { ...item, showCompletedMark: eligibilityStatus === "eligible" }
-          : item
-      );
+      return eligibilityStatus === "eligible"
+        ? studentMenu.filter((item) => item.href !== "/student/transcript")
+        : studentMenu;
     case "coordinator":
       return coordinatorMenu;
     case "company":
@@ -155,16 +151,13 @@ export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
             />
             <span
               className={cn(
-                "whitespace-nowrap transition-all duration-300 ease-in-out flex items-center gap-2",
+                "whitespace-nowrap transition-all duration-300 ease-in-out",
                 isCollapsed
                   ? "opacity-0 w-0 overflow-hidden ml-0"
                   : "opacity-100 w-auto ml-0"
               )}
             >
               {item.title}
-              {item.showCompletedMark && (
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              )}
             </span>
           </Link>
         );
