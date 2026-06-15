@@ -19,6 +19,12 @@ namespace InternshipManagement.API.Models
         public string? SupervisorFeedback { get; set; }
         public string? SupervisorId { get; set; }
 
+        /// <summary>Şirket süpervizörü satırı onayladığında (UTC).</summary>
+        public DateTime? SupervisorApprovedAt { get; set; }
+
+        /// <summary>Onaylayan şirket kullanıcısı (User.Id).</summary>
+        public string? SupervisorApprovedByUserId { get; set; }
+
         public string[]? Attachments { get; set; }
 
         // Foreign Key

@@ -1,5 +1,5 @@
 import { StatCard } from "@/components/common/stat-card";
-import { ClipboardList, Users, Briefcase, CheckCircle2, AlertCircle, TrendingUp } from "lucide-react";
+import { ClipboardList, CheckCircle2, AlertCircle, TrendingUp } from "lucide-react";
 
 interface CoordinatorStatsProps {
   pendingApplications: number;
@@ -28,7 +28,7 @@ export function CoordinatorDashboardStats({
         value={eligibleNotApplied}
         description="Students who can apply"
         icon={AlertCircle}
-        iconClassName="text-blue-500"
+        iconClassName="text-primary"
       />
       <StatCard
         title="Ongoing Internships"

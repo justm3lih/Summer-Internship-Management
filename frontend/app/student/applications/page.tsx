@@ -3,7 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
-import { ApplicationTable, ApplicationTableColumn } from "@/components/common/application-table";
+import {
+  ApplicationTable,
+  ApplicationTableAction,
+  ApplicationTableColumn,
+} from "@/components/common/application-table";
 import { ApplicationDetailModal } from "@/components/application/application-detail-modal";
 import { ApplicationFilters } from "@/components/student/application-filters";
 import { Pagination } from "@/components/common/pagination";
@@ -11,11 +15,22 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { useToastContext } from "@/components/providers/toast-provider";
 import { Eye, X } from "lucide-react";
 import { Application, ApplicationStatus } from "@/types";
-import { demoApplications, demoCompanies } from "@/lib/demo-data";
-import { format, subMonths, subDays, startOfYear } from "date-fns";
+import { getMyApplications, withdrawApplication, getStudentDashboardSummary } from "@/lib/api";
+import { format, subMonths, startOfYear } from "date-fns";
+
+interface StudentApplicationRow {
+  id: string;
+  company: string;
+  status: ApplicationStatus;
+  appliedDate: string;
+  appliedDateObj: Date;
+  application: Application;
+}
 
 export default function ApplicationsPage() {
   const { showToast } = useToastContext();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -23,19 +38,53 @@ export default function ApplicationsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [applicationLetterApprovedForExports, setApplicationLetterApprovedForExports] = useState<boolean | null>(
+    null
+  );
 
-  // Transform demo data for table
-  const allTableData = demoApplications.map((app) => {
-    const company = demoCompanies.find((c) => c.id === app.companyId);
-    return {
-      id: app.id,
-      company: company?.name || "Unknown",
-      status: app.status,
-      appliedDate: format(app.appliedDate, "MMM dd, yyyy"),
-      appliedDateObj: app.appliedDate,
-      application: app, // Store full application object
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadApplications = async () => {
+      setIsLoading(true);
+      const [data, summary] = await Promise.all([getMyApplications(), getStudentDashboardSummary()]);
+      if (!isMounted) return;
+      setApplications(data);
+      setApplicationLetterApprovedForExports(summary?.summerTrainingLetterStatus === "approved");
+      setIsLoading(false);
     };
-  });
+
+    loadApplications();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const replaceApplicationInState = (updatedApplication: Application) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === updatedApplication.id ? updatedApplication : application
+      )
+    );
+
+    setSelectedApplication((currentApplication) =>
+      currentApplication?.id === updatedApplication.id ? updatedApplication : currentApplication
+    );
+  };
+
+  const allTableData = useMemo(
+    () =>
+      applications.map((app) => ({
+        id: app.id,
+        company: app.company?.name || "Unknown",
+        status: app.status,
+        appliedDate: format(app.appliedDate, "MMM dd, yyyy"),
+        appliedDateObj: app.appliedDate,
+        application: app,
+      })),
+    [applications]
+  );
 
   const filteredTableData = useMemo(() => {
     const now = new Date();
@@ -76,30 +125,32 @@ export default function ApplicationsPage() {
     setCurrentPage(1);
   };
 
+  const totalPages = Math.max(1, Math.ceil(filteredTableData.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
   // Paginate filtered data
   const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
+    const startIndex = (safeCurrentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredTableData.slice(startIndex, endIndex);
-  }, [filteredTableData, currentPage, pageSize]);
+  }, [filteredTableData, safeCurrentPage, pageSize]);
 
-  const totalPages = Math.ceil(filteredTableData.length / pageSize);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, dateFilter]);
-
-  const columns: ApplicationTableColumn[] = [
+  const columns: ApplicationTableColumn<StudentApplicationRow>[] = [
     {
       key: "company",
       label: "Company",
-      render: (value) => <span className="font-medium">{value}</span>,
+      render: (value) => <span className="font-medium">{value as string}</span>,
     },
     {
       key: "status",
       label: "Status",
-      render: (value) => <StatusBadge status={value as ApplicationStatus} />,
+      render: (value, row) => (
+        <StatusBadge
+          status={value as ApplicationStatus}
+          coordinatorPlacementApproved={row.application.coordinatorPlacementApprovedAt != null}
+          companyPlacementApproved={row.application.companyPlacementApprovedAt != null}
+        />
+      ),
     },
     {
       key: "appliedDate",
@@ -107,19 +158,25 @@ export default function ApplicationsPage() {
     },
   ];
 
-  const handleView = (row: any) => {
+  const handleView = (row: { application: Application }) => {
     setSelectedApplication(row.application);
     setIsModalOpen(true);
   };
 
-  const handleWithdraw = (row: any) => {
+  const handleWithdraw = async (row: { application: Application }) => {
     if (confirm("Are you sure you want to withdraw this application?")) {
+      const result = await withdrawApplication(row.application.id);
+      if (!result.success) {
+        showToast(result.message, "error");
+        return;
+      }
+
+      replaceApplicationInState(result.application);
       showToast("Application withdrawn successfully", "success");
-      // In real app, this would call an API
     }
   };
 
-  const actions = [
+  const actions: ApplicationTableAction<StudentApplicationRow>[] = [
     {
       icon: Eye,
       onClick: handleView,
@@ -129,13 +186,9 @@ export default function ApplicationsPage() {
       onClick: handleWithdraw,
       variant: "ghost" as const,
       className: "text-red-600",
-      show: (row: any) => row.status === "pending",
+      show: (row: { status: ApplicationStatus }) => row.status === "pending",
     },
   ];
-
-  const selectedCompany = selectedApplication
-    ? demoCompanies.find((c) => c.id === selectedApplication.companyId)
-    : null;
 
   return (
     <div className="space-y-6">
@@ -157,17 +210,19 @@ export default function ApplicationsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Applications</CardTitle>
-          <CardDescription>Your submitted internship applications</CardDescription>
+          <CardDescription>
+            {isLoading ? "Loading your applications..." : "Your submitted internship applications"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ApplicationTable
+          <ApplicationTable<StudentApplicationRow>
             columns={columns}
             data={paginatedData}
             actions={actions}
           />
           {filteredTableData.length > 0 && (
             <Pagination
-              currentPage={currentPage}
+              currentPage={safeCurrentPage}
               totalPages={totalPages}
               pageSize={pageSize}
               totalItems={filteredTableData.length}
@@ -183,9 +238,13 @@ export default function ApplicationsPage() {
 
       <ApplicationDetailModal
         application={selectedApplication}
-        company={selectedCompany || null}
+        company={selectedApplication?.company || null}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        acceptanceLetterStudentDownloads
+        summerApplicationLetterApproved={applicationLetterApprovedForExports}
+        placementProgressHints
+        onAcceptanceLetterApplicationUpdated={replaceApplicationInState}
       />
     </div>
   );

@@ -3,7 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/common/page-header";
-import { ApplicationTable, ApplicationTableColumn } from "@/components/common/application-table";
+import {
+  ApplicationTable,
+  ApplicationTableAction,
+  ApplicationTableColumn,
+} from "@/components/common/application-table";
 import { ApplicationFilters } from "@/components/coordinator/application-filters";
 import { BulkActions } from "@/components/coordinator/bulk-actions";
 import { ApplicationDetailModal } from "@/components/application/application-detail-modal";
@@ -13,7 +17,8 @@ import { StatusBadge } from "@/components/common/status-badge";
 import { useToastContext } from "@/components/providers/toast-provider";
 import { CheckCircle2, XCircle, Eye, FileText, MessageSquare } from "lucide-react";
 import { ApplicationStatus, EligibilityStatus, Application } from "@/types";
-import { demoCoordinatorApplications, demoCompanies } from "@/lib/demo-data";
+import { getCoordinatorApplications, reviewCoordinatorApplication } from "@/lib/api";
+import { usePermissions } from "@/lib/use-permissions";
 import { format } from "date-fns";
 
 interface ApplicationRow {
@@ -30,6 +35,10 @@ interface ApplicationRow {
 
 export default function ApplicationsPage() {
   const { showToast } = useToastContext();
+  const { can } = usePermissions();
+  const canEditPlacement = can("applications.review") || can("applications.comment");
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "all">("all");
   const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityStatus | "all">("all");
@@ -45,18 +54,60 @@ export default function ApplicationsPage() {
     currentComment?: string;
   } | null>(null);
 
-  // Transform demo data
-  const allApplications: ApplicationRow[] = demoCoordinatorApplications.map((app) => ({
-    id: app.id,
-    studentName: app.student?.name || "Unknown",
-    studentId: app.studentId,
-    company: app.company?.name || "Unknown",
-    eligibilityStatus: app.student?.eligibilityStatus || "eligible",
-    appliedDate: format(app.appliedDate, "MMM dd, yyyy"),
-    hasDocuments: !!(app.documents.cv && app.documents.motivationLetter && app.documents.transcript),
-    status: app.status,
-    application: app,
-  }));
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadApplications = async () => {
+      setIsLoading(true);
+      const data = await getCoordinatorApplications();
+      if (!isMounted) return;
+      setApplications(data);
+      setIsLoading(false);
+    };
+
+    loadApplications();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const replaceApplicationInState = (updatedApplication: Application) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === updatedApplication.id ? updatedApplication : application
+      )
+    );
+
+    setSelectedApplication((currentApplication) =>
+      currentApplication?.id === updatedApplication.id ? updatedApplication : currentApplication
+    );
+
+    setCommentModal((currentCommentModal) =>
+      currentCommentModal?.applicationId === updatedApplication.id
+        ? {
+            ...currentCommentModal,
+            currentComment: updatedApplication.coordinatorComments,
+          }
+        : currentCommentModal
+    );
+  };
+
+  const allApplications: ApplicationRow[] = useMemo(
+    () =>
+      applications.map((app) => ({
+        id: app.id,
+        studentName: app.student?.name || "Unknown",
+        studentId: app.student?.studentId || app.studentId,
+        company: app.company?.name || "Unknown",
+        eligibilityStatus: app.student?.eligibilityStatus || "not_eligible",
+        appliedDate: format(app.appliedDate, "MMM dd, yyyy"),
+        hasDocuments: !!(app.documents.cv && app.documents.motivationLetter && app.documents.transcript),
+        status: app.status,
+        application: app,
+      })),
+    [applications]
+  );
 
   // Filter applications
   const filteredApplications = useMemo(() => {
@@ -80,26 +131,64 @@ export default function ApplicationsPage() {
   };
 
   // Paginate filtered data
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
   const paginatedApplications = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
+    const startIndex = (safeCurrentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredApplications.slice(startIndex, endIndex);
-  }, [filteredApplications, currentPage, pageSize]);
+  }, [filteredApplications, safeCurrentPage, pageSize]);
 
-  const totalPages = Math.ceil(filteredApplications.length / pageSize);
+  const handleBulkApprove = async () => {
+    const selectedApplications = applications.filter((application) => selectedIds.includes(application.id));
+    const results = await Promise.all(
+      selectedApplications.map((application) =>
+        reviewCoordinatorApplication(application.id, {
+          status: "approved",
+          coordinatorComments: application.coordinatorComments,
+        })
+      )
+    );
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, eligibilityFilter]);
+    const successfulResults = results.filter((result) => result.success);
+    successfulResults.forEach((result) => replaceApplicationInState(result.application));
 
-  const handleBulkApprove = () => {
-    showToast(`Approved ${selectedIds.length} application(s)`, "success");
+    if (successfulResults.length > 0) {
+      showToast(`Approved ${successfulResults.length} application(s)`, "success");
+    }
+
+    const failedResults = results.filter((result) => !result.success);
+    if (failedResults.length > 0) {
+      showToast(failedResults[0].message, "error");
+    }
+
     setSelectedIds([]);
   };
 
-  const handleBulkReject = () => {
-    showToast(`Rejected ${selectedIds.length} application(s)`, "info");
+  const handleBulkReject = async () => {
+    const selectedApplications = applications.filter((application) => selectedIds.includes(application.id));
+    const results = await Promise.all(
+      selectedApplications.map((application) =>
+        reviewCoordinatorApplication(application.id, {
+          status: "rejected",
+          coordinatorComments: application.coordinatorComments,
+        })
+      )
+    );
+
+    const successfulResults = results.filter((result) => result.success);
+    successfulResults.forEach((result) => replaceApplicationInState(result.application));
+
+    if (successfulResults.length > 0) {
+      showToast(`Rejected ${successfulResults.length} application(s)`, "info");
+    }
+
+    const failedResults = results.filter((result) => !result.success);
+    if (failedResults.length > 0) {
+      showToast(failedResults[0].message, "error");
+    }
+
     setSelectedIds([]);
   };
 
@@ -108,23 +197,45 @@ export default function ApplicationsPage() {
     setIsModalOpen(true);
   };
 
-  const handleApprove = (row: ApplicationRow) => {
+  const handleApprove = async (row: ApplicationRow) => {
+    const result = await reviewCoordinatorApplication(row.id, {
+      status: "approved",
+      coordinatorComments: row.application.coordinatorComments,
+    });
+
+    if (!result.success) {
+      showToast(result.message, "error");
+      return;
+    }
+
+    replaceApplicationInState(result.application);
     showToast(`Application from ${row.studentName} approved`, "success");
   };
 
-  const handleReject = (row: ApplicationRow) => {
+  const handleReject = async (row: ApplicationRow) => {
     if (confirm(`Reject application from ${row.studentName}?`)) {
+      const result = await reviewCoordinatorApplication(row.id, {
+        status: "rejected",
+        coordinatorComments: row.application.coordinatorComments,
+      });
+
+      if (!result.success) {
+        showToast(result.message, "error");
+        return;
+      }
+
+      replaceApplicationInState(result.application);
       showToast(`Application from ${row.studentName} rejected`, "info");
     }
   };
 
-  const columns: ApplicationTableColumn[] = [
+  const columns: ApplicationTableColumn<ApplicationRow>[] = [
     {
       key: "studentName",
       label: "Student",
       render: (value, row) => (
         <div>
-          <span className="font-medium">{value}</span>
+          <span className="font-medium">{value as string}</span>
           <p className="text-xs text-muted-foreground">ID: {row.studentId}</p>
         </div>
       ),
@@ -141,13 +252,19 @@ export default function ApplicationsPage() {
     {
       key: "status",
       label: "Status",
-      render: (value) => <StatusBadge status={value as ApplicationStatus} />,
+      render: (value, row) => (
+        <StatusBadge
+          status={value as ApplicationStatus}
+          coordinatorPlacementApproved={row.application.coordinatorPlacementApprovedAt != null}
+          companyPlacementApproved={row.application.companyPlacementApprovedAt != null}
+        />
+      ),
     },
     {
       key: "hasDocuments",
       label: "Documents",
       render: (value) =>
-        value ? (
+        (value as boolean) ? (
           <FileText className="h-4 w-4 text-green-500" />
         ) : (
           <span className="text-xs text-muted-foreground">Missing</span>
@@ -168,44 +285,65 @@ export default function ApplicationsPage() {
     });
   };
 
-  const handleSaveComment = (comment: string) => {
-    if (commentModal) {
-      // In real app, save to API
-      showToast("Comment saved", "success");
-      setCommentModal(null);
+  const handleSaveComment = async (comment: string) => {
+    if (!commentModal) return;
+
+    // Sadece yorumu güncelle. Status'ü göndermiyoruz; backend null status'te
+    // duruma dokunmuyor (bu sayede ongoing/completed başvurular bozulmuyor).
+    const result = await reviewCoordinatorApplication(commentModal.applicationId, {
+      coordinatorComments: comment,
+    });
+
+    if (!result.success) {
+      showToast(result.message, "error");
+      return;
     }
+
+    replaceApplicationInState(result.application);
+    showToast("Comment saved", "success");
+    setCommentModal(null);
   };
 
-  const actions = [
+  const canReview = can("applications.review");
+  const canComment = can("applications.comment");
+  const canBulk = can("applications.bulk");
+
+  const actions: ApplicationTableAction<ApplicationRow>[] = [
     {
       icon: Eye,
       onClick: handleView,
     },
-    {
-      icon: MessageSquare,
-      onClick: handleComment,
-      variant: "ghost" as const,
-      className: "text-blue-600",
-    },
-    {
-      icon: CheckCircle2,
-      onClick: handleApprove,
-      variant: "ghost" as const,
-      className: "text-green-600",
-      show: (row: ApplicationRow) => row.status === "pending",
-    },
-    {
-      icon: XCircle,
-      onClick: handleReject,
-      variant: "ghost" as const,
-      className: "text-red-600",
-      show: (row: ApplicationRow) => row.status === "pending",
-    },
+    ...(canComment
+      ? [
+          {
+            icon: MessageSquare,
+            onClick: handleComment,
+            variant: "ghost" as const,
+            className: "text-primary",
+          },
+        ]
+      : []),
+    ...(canReview
+      ? [
+          {
+            icon: CheckCircle2,
+            onClick: handleApprove,
+            variant: "ghost" as const,
+            className: "text-green-600",
+            show: (row: ApplicationRow) =>
+              row.status === "pending" && !row.application.coordinatorPlacementApprovedAt,
+          },
+          {
+            icon: XCircle,
+            onClick: handleReject,
+            variant: "ghost" as const,
+            className: "text-red-600",
+            show: (row: ApplicationRow) =>
+              row.status === "pending" && !row.application.coordinatorPlacementApprovedAt,
+          },
+        ]
+      : []),
   ];
-
-  const selectedCompany = selectedApplication
-    ? demoCompanies.find((c) => c.id === selectedApplication.companyId)
-    : null;
 
   return (
     <div className="space-y-6">
@@ -224,32 +362,34 @@ export default function ApplicationsPage() {
         onClearFilters={handleClearFilters}
       />
 
-      <BulkActions
-        selectedIds={selectedIds}
-        onBulkApprove={handleBulkApprove}
-        onBulkReject={handleBulkReject}
-        onClearSelection={() => setSelectedIds([])}
-      />
+      {canBulk && (
+        <BulkActions
+          selectedIds={selectedIds}
+          onBulkApprove={handleBulkApprove}
+          onBulkReject={handleBulkReject}
+          onClearSelection={() => setSelectedIds([])}
+        />
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle>Applications</CardTitle>
           <CardDescription>
-            {filteredApplications.length} application(s) found
+            {isLoading ? "Loading coordinator applications..." : `${filteredApplications.length} application(s) found`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ApplicationTable
+          <ApplicationTable<ApplicationRow>
             columns={columns}
             data={paginatedApplications}
             actions={actions}
-            selectable
+            selectable={canBulk}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
           />
           {filteredApplications.length > 0 && (
             <Pagination
-              currentPage={currentPage}
+              currentPage={safeCurrentPage}
               totalPages={totalPages}
               pageSize={pageSize}
               totalItems={filteredApplications.length}
@@ -265,9 +405,13 @@ export default function ApplicationsPage() {
 
       <ApplicationDetailModal
         application={selectedApplication}
-        company={selectedCompany || null}
+        company={selectedApplication?.company || null}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        placementEditorRole={canEditPlacement ? "coordinator" : undefined}
+        onPlacementSaved={replaceApplicationInState}
+        onAcceptanceLetterApplicationUpdated={replaceApplicationInState}
+        coordinatorAcceptanceVerification={can("applications.review")}
       />
 
       {commentModal && (

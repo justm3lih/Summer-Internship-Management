@@ -1,18 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ApplicationTable, ApplicationTableColumn } from "@/components/common/application-table";
+import {
+  ApplicationTable,
+  ApplicationTableAction,
+  ApplicationTableColumn,
+} from "@/components/common/application-table";
 import { Pagination } from "@/components/common/pagination";
 import { StatusBadge } from "@/components/common/status-badge";
 import { StudentDetailModal } from "@/components/coordinator/student-detail-modal";
 import { StudentMonitoringFilters } from "@/components/coordinator/student-monitoring-filters";
-import { useToastContext } from "@/components/providers/toast-provider";
-import { Eye, Mail, FileText } from "lucide-react";
-import { ApplicationStatus, EligibilityStatus } from "@/types";
-import { demoStudents, demoEligibility, demoLogbookEntries, demoFinalReport } from "@/lib/demo-data";
+import { Eye, FileText } from "lucide-react";
+import { ApplicationStatus, CoordinatorStudentMonitoring, EligibilityStatus } from "@/types";
+import { getCoordinatorMonitoring } from "@/lib/api";
+import { fetchStudentDepartments } from "@/lib/departments";
+import Link from "next/link";
 
 interface StudentRow {
   id: string;
@@ -24,11 +28,12 @@ interface StudentRow {
   internshipStatus: ApplicationStatus;
   logbookEntries: number;
   reportStatus: string;
-  student: any;
+  student: CoordinatorStudentMonitoring;
 }
 
 export default function MonitoringPage() {
-  const { showToast } = useToastContext();
+  const [students, setStudents] = useState<CoordinatorStudentMonitoring[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityStatus | "all">("all");
@@ -36,24 +41,69 @@ export default function MonitoringPage() {
   const [reportStatusFilter, setReportStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<CoordinatorStudentMonitoring | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deptListSettings, setDeptListSettings] = useState<string[]>([]);
 
-  const students: StudentRow[] = demoStudents.map((student) => ({
-    id: student.id,
-    name: student.name,
-    studentId: student.studentId || "",
-    department: student.department || "",
-    semester: student.currentSemester || 7,
-    eligibilityStatus: student.eligibilityStatus,
-    internshipStatus: student.internshipStatus,
-    logbookEntries: student.logbookEntriesCount || 0,
-    reportStatus: student.reportStatus || "not_submitted",
-    student: student,
-  }));
+  const refetchStudents = useCallback(async () => {
+    const [data, depts] = await Promise.all([
+      getCoordinatorMonitoring(),
+      fetchStudentDepartments(),
+    ]);
+    setStudents(data);
+    setDeptListSettings(depts);
+    setSelectedStudent((prev) => {
+      if (!prev) return null;
+      return data.find((s) => s.id === prev.id) ?? prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      setIsLoading(true);
+      const [data, depts] = await Promise.all([
+        getCoordinatorMonitoring(),
+        fetchStudentDepartments(),
+      ]);
+      if (!isMounted) return;
+      setStudents(data);
+      setDeptListSettings(depts);
+      setIsLoading(false);
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filterDepartmentOptions = useMemo(() => {
+    const set = new Set<string>(deptListSettings);
+    students.forEach((s) => {
+      const d = s.department?.trim();
+      if (d) set.add(d);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [deptListSettings, students]);
+
+  const studentRows: StudentRow[] = useMemo(
+    () =>
+      students.map((student) => ({
+        id: student.id,
+        name: student.name,
+        studentId: student.studentId || "",
+        department: student.department || "",
+        semester: student.currentSemester || 0,
+        eligibilityStatus: student.eligibilityStatus,
+        internshipStatus: student.internshipStatus,
+        logbookEntries: student.logbookEntriesCount,
+        reportStatus: student.reportStatus,
+        student,
+      })),
+    [students]
+  );
 
   const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
+    return studentRows.filter((student) => {
       const matchesSearch =
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.studentId.includes(searchTerm);
@@ -72,7 +122,7 @@ export default function MonitoringPage() {
         matchesReportStatus
       );
     });
-  }, [searchTerm, departmentFilter, eligibilityFilter, internshipStatusFilter, reportStatusFilter, students]);
+  }, [searchTerm, departmentFilter, eligibilityFilter, internshipStatusFilter, reportStatusFilter, studentRows]);
 
   const handleClearFilters = () => {
     setSearchTerm("");
@@ -83,36 +133,28 @@ export default function MonitoringPage() {
     setCurrentPage(1);
   };
 
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
   // Paginate filtered data
   const paginatedStudents = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
+    const startIndex = (safeCurrentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredStudents.slice(startIndex, endIndex);
-  }, [filteredStudents, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredStudents.length / pageSize);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, departmentFilter, eligibilityFilter, internshipStatusFilter, reportStatusFilter]);
+  }, [filteredStudents, safeCurrentPage, pageSize]);
 
   const handleViewDetails = (row: StudentRow) => {
     setSelectedStudent(row.student);
     setIsModalOpen(true);
   };
 
-  const handleSendReminder = (row: StudentRow) => {
-    showToast(`Reminder sent to ${row.name}`, "success");
-  };
-
-  const columns: ApplicationTableColumn[] = [
+  const columns: ApplicationTableColumn<StudentRow>[] = [
     {
       key: "name",
       label: "Student",
       render: (value, row) => (
         <div>
-          <span className="font-medium">{value}</span>
+          <span className="font-medium">{value as string}</span>
           <p className="text-xs text-muted-foreground">ID: {row.studentId}</p>
         </div>
       ),
@@ -124,7 +166,7 @@ export default function MonitoringPage() {
     {
       key: "semester",
       label: "Semester",
-      render: (value) => `Semester ${value}`,
+      render: (value) => `Semester ${value as number}`,
     },
     {
       key: "eligibilityStatus",
@@ -139,32 +181,25 @@ export default function MonitoringPage() {
     {
       key: "logbookEntries",
       label: "Logbook",
-      render: (value) => (
-        <div className="flex items-center gap-1">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <span>{value} entries</span>
-        </div>
+      render: (value, row) => (
+        <Link href={`/coordinator/logbooks/${row.id}`} className="text-blue-600 hover:underline font-medium">
+          {value as number} entries
+        </Link>
       ),
     },
     {
       key: "reportStatus",
       label: "Report",
       render: (value) => (
-        <span className="text-xs capitalize">{value.replace("_", " ")}</span>
+        <span className="text-xs capitalize">{String(value).replace("_", " ")}</span>
       ),
     },
   ];
 
-  const actions = [
+  const actions: ApplicationTableAction<StudentRow>[] = [
     {
       icon: Eye,
       onClick: handleViewDetails,
-    },
-    {
-      icon: Mail,
-      onClick: handleSendReminder,
-      variant: "ghost" as const,
-      className: "text-blue-600",
     },
   ];
 
@@ -178,6 +213,7 @@ export default function MonitoringPage() {
       <StudentMonitoringFilters
         searchTerm={searchTerm}
         departmentFilter={departmentFilter}
+        departmentOptions={filterDepartmentOptions}
         eligibilityFilter={eligibilityFilter}
         internshipStatusFilter={internshipStatusFilter}
         reportStatusFilter={reportStatusFilter}
@@ -193,14 +229,14 @@ export default function MonitoringPage() {
         <CardHeader>
           <CardTitle>Department Students</CardTitle>
           <CardDescription>
-            {filteredStudents.length} student(s) found
+            {isLoading ? "Loading monitoring data..." : `${filteredStudents.length} student(s) found`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ApplicationTable columns={columns} data={paginatedStudents} actions={actions} />
+          <ApplicationTable<StudentRow> columns={columns} data={paginatedStudents} actions={actions} />
           {filteredStudents.length > 0 && (
             <Pagination
-              currentPage={currentPage}
+              currentPage={safeCurrentPage}
               totalPages={totalPages}
               pageSize={pageSize}
               totalItems={filteredStudents.length}
@@ -216,9 +252,13 @@ export default function MonitoringPage() {
 
       {selectedStudent && (
         <StudentDetailModal
+          key={`${selectedStudent.id}-${selectedStudent.department || ""}-${selectedStudent.advisorUserId ?? ""}-${selectedStudent.summerTrainingLetterStatus ?? ""}`}
           student={selectedStudent}
+          departmentOptions={deptListSettings}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onDepartmentUpdated={refetchStudents}
+          onAdvisorUpdated={refetchStudents}
         />
       )}
     </div>

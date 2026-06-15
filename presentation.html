@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internship Portal - Jury Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f9;
+      font-family: 'Outfit', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Presentation Wrapper */
+    .presentation-container {
+      position: relative;
+      width: 1024px;
+      height: 600px;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Slide Deck */
+    .slides-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 40px;
+      box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Slide Header */
+    .slide-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 0;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-title-accent {
+      width: 6px;
+      height: 28px;
+      background-color: #3b82f6;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Content Layouts */
+    .slide-body {
+      display: flex;
+      flex: 1;
+      gap: 30px;
+      overflow: hidden;
+    }
+
+    .col-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .col-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Text & Info Cards */
+    .info-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 5px solid #3b82f6;
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-card.success-accent { border-left-color: #10b981; }
+    .info-card.warning-accent { border-left-color: #f59e0b; }
+    .info-card.purple-accent { border-left-color: #8b5cf6; }
+    .info-card.danger-accent { border-left-color: #ef4444; }
+
+    .card-header {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header svg {
+      width: 16px;
+      height: 16px;
+      fill: #3b82f6;
+    }
+    .info-card.success-accent .card-header svg { fill: #10b981; }
+    .info-card.warning-accent .card-header svg { fill: #f59e0b; }
+    .info-card.purple-accent .card-header svg { fill: #8b5cf6; }
+
+    .card-desc {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      background-color: #dbeafe;
+      color: #1e40af;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-top: 4px;
+    }
+
+    /* Placeholders & Media */
+    .media-box {
+      width: 100%;
+      height: 260px;
+      background-color: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06);
+    }
+
+    .play-btn {
+      width: 50px;
+      height: 50px;
+      background-color: rgba(59, 130, 246, 0.9);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+    }
+
+    .play-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+      margin-left: 2px;
+    }
+
+    .caption {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #64748b;
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* Bottom Navigation Bar */
+    .nav-bar {
+      height: 50px;
+      background-color: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+
+    .nav-btn {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s;
+    }
+
+    .nav-btn:hover {
+      background-color: #f1f5f9;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    /* Slide specific styles */
+    .title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle at top right, #eff6ff, #ffffff);
+    }
+    .title-slide h1 { font-size: 40px; margin-bottom: 8px; color: #0f172a; }
+    .title-slide h2 { font-size: 20px; font-weight: 400; color: #475569; margin-bottom: 40px; }
+    .title-slide .meta { font-size: 14px; color: #64748b; line-height: 1.6; }
+
+    /* Horizontal Roadmap for Slide 11 */
+    .roadmap {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+    }
+
+    .roadmap-step {
+      flex: 1;
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .roadmap-step::after {
+      content: "➔";
+      position: absolute;
+      right: -16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #cbd5e1;
+      font-size: 20px;
+    }
+
+    .roadmap-step:last-child::after {
+      display: none;
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      background-color: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 12px auto;
+      font-weight: bold;
+    }
+
+    /* Horizontal Flow for Slide 3 */
+    .flow-horizontal {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-top: 15px;
+    }
+    .flow-box {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .flow-box-title {
+      font-weight: bold;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+    }
+
+    /* Embed architectural diagram */
+    .diag-embed {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 12px;
+    }
+
+    /* Jury QA Defense Grid */
+    .qa-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .qa-card {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid #ef4444; /* red left border for question */
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 6px;
+    }
+
+    .qa-question {
+      font-size: 13px;
+      font-weight: 700;
+      color: #991b1b; /* dark red */
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .qa-answer-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #047857; /* dark emerald */
+      margin: 2px 0 0 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .qa-desc {
+      font-size: 11px;
+      color: #334155;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    /* Implementation Proof Cards */
+    .proof-card {
+      background-color: #f5f3ff; /* Very soft purple/indigo tint */
+      border: 1px dashed #c084fc;
+      border-left: 5px solid #8b5cf6; /* Strong purple/indigo accent */
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      margin-top: auto; /* Push to the bottom of the flex container */
+    }
+
+    .proof-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6b21a8; /* Dark violet */
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .proof-desc {
+      font-size: 11px;
+      color: #581c87; /* Violet description */
+      line-height: 1.4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="presentation-container">
+    <div class="slides-wrapper">
+
+      <!-- Slide 1: Kapak -->
+      <div class="slide active title-slide">
+        <h1 style="color: #1e3b8b;">Summer Internship Management System</h1>
+        <h2>Web-Based & AI-Powered Workflow Management Platform</h2>
+        <div class="meta" style="margin-top: 30px;">
+          <p><strong>Prepared by:</strong> Osman Melih Çınar</p>
+          <p><strong>Advisor:</strong> Asst. Prof. Dr. Academic Advisor</p>
+          <p>June 2026</p>
+        </div>
+      </div>
+
+      <!-- Slide 2: Problem Statement -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Why this Project? (Problem Statement)</div>
+        <div class="slide-body">
+          <div class="col-left">
+            <div class="info-card danger-accent">
+              <div class="card-header">Manual Document Tracking</div>
+              <p class="card-desc">Relying on paper-based forms (application letters, printed logbooks) risks damage (wet/torn) and loss.</p>
+            </div>
+            <div class="info-card danger-accent">
+              <div class="card-header">Communication Breakdown</div>
+              <p class="card-desc">Inefficient coordination channels (emails, chats) between students, academic advisors, and company supervisors.</p>
+            </div>
+            <div class="info-card danger-accent">
+              <div class="card-header">Academic Assessment Burden</div>
+              <p class="card-desc">Reviewing hundreds of physical logbooks and training reports manually takes weeks of coordinators' time.</p>
+            </div>
+            <div class="info-card danger-accent">
+              <div class="card-header">Information Pollution</div>
+              <p class="card-desc">Students struggle to find correct instructions, resulting in repeated inquiries to coordinators.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box" style="background-color: #f1f5f9; border-style: dashed;">
+              <span style="font-size: 50px;">📸</span>
+              <span style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 10px;">[ Messy Office Cluttered Desk Image ]</span>
+            </div>
+            <div class="caption">Figure 2.1: Depicting operational overhead of physical paper-based tracking.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3: The Solution -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>The Solution: End-to-End Digitalization</div>
+        <div class="slide-body" style="flex-direction: column;">
+          <div style="display: flex; gap: 30px; flex: 1;">
+            <div class="col-left" style="flex: 1.2;">
+              <div class="info-card success-accent">
+                <div class="card-header">100% Digital Workflow</div>
+                <p class="card-desc">Migrates all processes (from initial placement request to final report grading) into a single, unified database system.</p>
+              </div>
+              <div class="info-card success-accent">
+                <div class="card-header">Role-Based Access Control</div>
+                <p class="card-desc">Features dedicated portals with secure views and workflows for Students, Supervisors, and Coordinators.</p>
+              </div>
+              <div class="info-card success-accent">
+                <div class="card-header">AI-Powered Advisor Support</div>
+                <p class="card-desc">Reduces coordinator load by delegating standard rule enquiries to a custom-trained AI assistant.</p>
+              </div>
+            </div>
+            <div class="col-right" style="flex: 0.8; justify-content: flex-start; padding-top: 20px;">
+              <div class="info-card warning-accent" style="width: 100%;">
+                <div class="card-header">Unified Database Flow</div>
+                <p class="card-desc">Keeps all student records (acceptance documents, supervisor ratings, daily logs) digitally signed and linked in the system.</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Horizontal Flow chart -->
+          <div class="flow-horizontal">
+            <div class="flow-box"><div class="flow-box-title">01. Application</div>Student submits placement details</div>
+            <div style="align-self: center; color: #94a3b8;">➔</div>
+            <div class="flow-box"><div class="flow-box-title">02. Placement Approval</div>Coordinator approves insurance</div>
+            <div style="align-self: center; color: #94a3b8;">➔</div>
+            <div class="flow-box"><div class="flow-box-title">03. Daily Sign-off</div>Supervisor reviews logs & grades</div>
+            <div style="align-self: center; color: #94a3b8;">➔</div>
+            <div class="flow-box"><div class="flow-box-title">04. Final Grade</div>Coordinator submits final grade</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4: System Architecture -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>System Architecture & Tech Stack</div>
+        <div class="slide-body">
+          <div class="col-left" style="flex: 0.9; gap: 10px;">
+            <div class="info-card purple-accent" style="padding: 10px 14px;">
+              <div class="card-header">Frontend Application</div>
+              <p class="card-desc">Built with Next.js 14, TypeScript, and Tailwind CSS. Modern UI elements powered by Shadcn UI.</p>
+            </div>
+            <div class="info-card purple-accent" style="padding: 10px 14px;">
+              <div class="card-header">Backend REST API</div>
+              <p class="card-desc">Powered by ASP.NET Core Web API (.NET 8 / C#) utilizing Entity Framework Core ORM.</p>
+            </div>
+            <div class="info-card purple-accent" style="padding: 10px 14px;">
+              <div class="card-header">Database & AI</div>
+              <p class="card-desc">PostgreSQL database storage. Google Gemini API (gemini-2.5-flash-lite) for AI RAG chatbot capabilities.</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (Clean Decoupled APIs)</div>
+              <p class="proof-desc">We designed a decoupled architecture where the frontend interacts strictly via secure REST JSON endpoints. DB schemas and relationships are defined via C# Code-First Migrations.</p>
+            </div>
+          </div>
+          <div class="col-right" style="flex: 1.1;">
+            <!-- Render diagram.html in an iframe -->
+            <iframe class="diag-embed" src="diagram.html"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5: User Roles Overview -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>User Portals & Roles</div>
+        <div class="slide-body" style="gap: 20px;">
+          
+          <!-- Student Card -->
+          <div class="roadmap-step" style="flex: 1; height: 320px; display: flex; flex-direction: column; justify-content: center;">
+            <div class="step-num" style="background-color: #3b82f6;">S</div>
+            <h3 style="margin-top: 0; color: #1e3a8a;">Student Portal</h3>
+            <p style="font-size: 13px; color: #475569; line-height: 1.4;">Creates placement applications, uploads company letters, inputs daily log entries, and uploads final reports.</p>
+          </div>
+
+          <!-- Supervisor Card -->
+          <div class="roadmap-step" style="flex: 1; height: 320px; display: flex; flex-direction: column; justify-content: center;">
+            <div class="step-num" style="background-color: #10b981;">W</div>
+            <h3 style="margin-top: 0; color: #064e3b;">Workplace Supervisor</h3>
+            <p style="font-size: 13px; color: #475569; line-height: 1.4;">Approves student logbook entries on a daily basis. Fills out final program outcome (PO) evaluation scoring sheets.</p>
+          </div>
+
+          <!-- Coordinator Card -->
+          <div class="roadmap-step" style="flex: 1; height: 320px; display: flex; flex-direction: column; justify-content: center;">
+            <div class="step-num" style="background-color: #8b5cf6;">C</div>
+            <h3 style="margin-top: 0; color: #4c1d95;">Internship Coordinator</h3>
+            <p style="font-size: 13px; color: #475569; line-height: 1.4;">Verifies placement details, checks daily logbook signatures, schedules jüri evaluations, and enters final grades.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Slide 6: Student Portal Details -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Student Portal & Key Workflows</div>
+        <div class="slide-body">
+          <div class="col-left" style="gap: 10px;">
+            <div class="info-card" style="padding: 10px 14px;">
+              <div class="card-header">Digital Logbook & Forms</div>
+              <p class="card-desc">Interactive daily calendar interface. Generates official PDF application letters and secures SGK insurance uploads.</p>
+              <span class="badge">Word Count Checker (Min: 20, Max: 100)</span>
+            </div>
+            <div class="info-card" style="padding: 10px 14px;">
+              <div class="card-header">Live Progress Tracker</div>
+              <p class="card-desc">Visual progress tracker showing the current status of the internship (Pending, Approved, Ongoing, Completed).</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (DOCX & State Lock)</div>
+              <p class="proof-desc">We parsed CIU's official DOCX XML tags in C# using OpenXML, mapping database logs directly. Logbook input is validated server-side and locked via state machine once approved.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box">
+              <div class="play-btn">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 10px;">📹 PLAY VIDEO DEMO (0:20)</span>
+            </div>
+            <div class="caption">Figure 6.1: Student creating a logbook entry and checking workflow progress.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 7: Supervisor Portal & Evaluation -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Supervisor Portal & Evaluation</div>
+        <div class="slide-body">
+          <div class="col-left" style="gap: 10px;">
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">Daily Sign-off & Monitoring</div>
+              <p class="card-desc">Supervisor reads daily submissions, approves or rejects logs, and monitors intern progress dynamically.</p>
+            </div>
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">PO Evaluation Sheets</div>
+              <p class="card-desc">Standardized evaluation covering 11 academic Program Outcomes (POs) with radial scoring feeding to backend computations.</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (PO Math & Supervisor Security)</div>
+              <p class="proof-desc">Supervisors are restricted via database relations. We designed a backend engine that maps 11 PO Likert scores to the database and averages results dynamically, preventing score tampering.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box">
+              <div class="play-btn" style="background-color: #10b981;">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 10px;">📹 PLAY VIDEO DEMO (0:15)</span>
+            </div>
+            <div class="caption">Figure 7.1: Supervisor reviewing daily logbook entries and signing off.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 8: Coordinator Portal & Admin Settings -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Coordinator Portal & Admin Settings</div>
+        <div class="slide-body">
+          <div class="col-left" style="gap: 10px;">
+            <div class="info-card purple-accent" style="padding: 10px 14px;">
+              <div class="card-header">Placement & SGK Verification</div>
+              <p class="card-desc">Reviews student applications, logs SGK insurance documents digitally, and manages knowledge base resources for students.</p>
+            </div>
+            <div class="info-card purple-accent" style="padding: 10px 14px;">
+              <div class="card-header">Admin Panel: Custom Staff Privileges</div>
+              <p class="card-desc">Assigns granular permissions to staff accounts (e.g., Advisor, SGK Officer, Jury, Head Coordinator) to enforce duty separation.</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (Dynamic RBAC Policy)</div>
+              <p class="proof-desc">We implemented a custom Claims Policy middleware in C#. Staff privileges are validated against specific flag masks (e.g., <code>CanApproveSGK</code>, <code>CanEvaluateJury</code>) rather than static, hardcoded role strings.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box">
+              <div class="play-btn" style="background-color: #8b5cf6;">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 10px;">📹 PLAY VIDEO DEMO (0:15)</span>
+            </div>
+            <div class="caption">Figure 8.1: Coordinator reviewing logbook entries and exporting templates.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 9: AI RAG Integration -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Fark Yaratan Özellik: AI & RAG Integration</div>
+        <div class="slide-body">
+          <div class="col-left" style="flex: 1.1; gap: 10px;">
+            <div class="info-card warning-accent" style="padding: 10px 14px;">
+              <div class="card-header">Retrieval-Augmented Generation (RAG)</div>
+              <p class="card-desc">Dynamically queries the database for staj guidelines and personal logs count, passing them as a context block to Gemini to block hallucinations.</p>
+            </div>
+            <div class="info-card warning-accent" style="padding: 10px 14px;">
+              <div class="card-header">Database-Linked Personal Assistant</div>
+              <p class="card-desc">Reads user-specific placement data in real-time, allowing students to ask, "How many days left?" or "Is my SGK approved?".</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (Custom RAG Pipeline)</div>
+              <p class="proof-desc">We wrote custom C# service wrappers around the Gemini SDK. Before calling the LLM, we execute C# queries to pull the student's active state, injecting it as structured background prompt context.</p>
+            </div>
+          </div>
+          <div class="col-right" style="flex: 0.9;">
+            <div class="media-box">
+              <div class="play-btn" style="background-color: #f59e0b;">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <span style="font-size: 11px; font-weight: 600; color: #64748b; margin-top: 10px;">📹 PLAY CHAT DEMO (0:15)</span>
+            </div>
+            <div class="caption">Figure 9.1: AI answering "Kaç günüm kaldı?" in English and Turkish.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 10: Security and Database -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Security Infrastructure & Database</div>
+        <div class="slide-body">
+          <div class="col-left" style="gap: 10px;">
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">Cookie & Token Security (JWT)</div>
+              <p class="card-desc">JWT tokens are stored in <strong>HttpOnly, SameSite, Secure Cookies</strong> to protect user sessions from XSS/CSRF extraction.</p>
+            </div>
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">Protected Document Streams</div>
+              <p class="card-desc">PDF/Word files are stored outside the public web root. Custom ASP.NET controller streams serve them only after validating role authorization.</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Yaptık? (EF Core SQL Guard & JWT Claims)</div>
+              <p class="proof-desc">We used EF Core parameterized queries to block SQL Injection. All controller endpoints validate owner IDs extracted directly from the signed JWT payload claims, preventing IDOR.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box" style="background-color: #f8fafc; border-color: #e2e8f0;">
+              <span style="font-size: 60px;">🔒</span>
+              <span style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px;">Enterprise-Grade Security Architecture</span>
+            </div>
+            <div class="caption">Figure 10.1: Security mapping and DB encryption diagram.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 11: Project Verification & Testing -->
+      <div class="slide">
+        <div class="slide-title"><span class="slide-title-accent"></span>Project Verification & Testing</div>
+        <div class="slide-body">
+          <div class="col-left" style="gap: 10px;">
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">Backend Unit Testing (xUnit)</div>
+              <p class="card-desc">Wrote xUnit test suites to verify business validation constraints, logbook word count limits, and state machines.</p>
+            </div>
+            <div class="info-card success-accent" style="padding: 10px 14px;">
+              <div class="card-header">API & Integration Checks</div>
+              <p class="card-desc">Used Postman testing collections to validate response payloads, HTTP status codes, and JWT security assertions.</p>
+            </div>
+            <div class="proof-card">
+              <div class="proof-header">🛠️ Biz Nasıl Doğruladık? (Git & Integration Proof)</div>
+              <p class="proof-desc">We set up local PostgreSQL transactional tests. We validated that database constraints block duplicate student applications, and monitored branch merges in Git to track team contributions.</p>
+            </div>
+          </div>
+          <div class="col-right">
+            <div class="media-box" style="background-color: #f8fafc; border-color: #cbd5e1;">
+              <span style="font-size: 50px;">🧪</span>
+              <span style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 10px;">[ Automated Tests Execution Screenshot ]</span>
+            </div>
+            <div class="caption">Figure 11.1: Automated xUnit suites passing with 100% success rate.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 12: Q&A -->
+      <div class="slide title-slide" style="background: radial-gradient(circle at center, #f8fafc, #ffffff);">
+        <h1 style="font-size: 44px; color: #1e3b8b;">Thank You!</h1>
+        <h2 style="font-size: 20px; font-weight: 500; margin-bottom: 40px;">Questions & Answers</h2>
+        <div class="meta" style="font-size: 14px; color: #475569;">
+          <p><strong>Project Repository:</strong> github.com/justm3lih/Summer-Internship-Management</p>
+          <p><strong>Contact Email:</strong> [Your Email Address]</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Bar controls -->
+    <div class="nav-bar">
+      <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)" disabled>
+        ◀ Previous
+      </button>
+      <div class="progress-text" id="progressText">
+        Slide 1 of 12
+      </div>
+      <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">
+        Next ▶
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressText = document.getElementById('progressText');
+
+    function changeSlide(direction) {
+      // Deactivate current slide
+      slides[currentSlide].classList.remove('active');
+
+      // Calculate next index
+      currentSlide = (currentSlide + direction + totalSlides) % totalSlides;
+
+      // Activate new slide
+      slides[currentSlide].classList.add('active');
+
+      // Update progress bar controls
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+      progressText.textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+    }
+
+    // Keyboard Arrow Keys support
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'ArrowRight' || event.key === 'Space' || event.key === ' ') {
+        if (currentSlide < totalSlides - 1) changeSlide(1);
+        event.preventDefault();
+      } else if (event.key === 'ArrowLeft') {
+        if (currentSlide > 0) changeSlide(-1);
+        event.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

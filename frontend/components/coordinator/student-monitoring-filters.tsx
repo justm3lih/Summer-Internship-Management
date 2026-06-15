@@ -14,6 +14,8 @@ import { ApplicationStatus, EligibilityStatus } from "@/types";
 
 interface StudentMonitoringFiltersProps {
   searchTerm: string;
+  /** Koordinatör ayarlarından gelen bölüm adları + filtre */
+  departmentOptions: string[];
   departmentFilter: string;
   eligibilityFilter: EligibilityStatus | "all";
   internshipStatusFilter: ApplicationStatus | "all";
@@ -28,6 +30,7 @@ interface StudentMonitoringFiltersProps {
 
 export function StudentMonitoringFilters({
   searchTerm,
+  departmentOptions,
   departmentFilter,
   eligibilityFilter,
   internshipStatusFilter,
@@ -65,10 +68,11 @@ export function StudentMonitoringFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
-            <SelectItem value="Computer Science">Computer Science</SelectItem>
-            <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
-            <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
-            <SelectItem value="Business">Business</SelectItem>
+            {departmentOptions.map((d) => (
+              <SelectItem key={d} value={d}>
+                {d}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -106,9 +110,9 @@ export function StudentMonitoringFilters({
           <SelectContent>
             <SelectItem value="all">All Reports</SelectItem>
             <SelectItem value="not_submitted">Not Submitted</SelectItem>
-            <SelectItem value="submitted">Submitted</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="needs_revision">Needs Revision</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, MessageSquare } from "lucide-react";
-import { useToastContext } from "@/components/providers/toast-provider";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 interface BulkActionsProps {
   selectedIds: string[];
@@ -17,18 +16,16 @@ export function BulkActions({
   onBulkReject,
   onClearSelection,
 }: BulkActionsProps) {
-  const { showToast } = useToastContext();
-
   if (selectedIds.length === 0) return null;
 
   const handleBulkApprove = () => {
-    showToast(`Approved ${selectedIds.length} application(s)`, "success");
-    onBulkApprove();
+    if (confirm(`Are you sure you want to approve ${selectedIds.length} application(s)?`)) {
+      onBulkApprove();
+    }
   };
 
   const handleBulkReject = () => {
     if (confirm(`Are you sure you want to reject ${selectedIds.length} application(s)?`)) {
-      showToast(`Rejected ${selectedIds.length} application(s)`, "info");
       onBulkReject();
     }
   };

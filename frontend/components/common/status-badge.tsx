@@ -4,9 +4,17 @@ import { ApplicationStatus, EligibilityStatus } from "@/types";
 interface StatusBadgeProps {
   status: ApplicationStatus | EligibilityStatus;
   type?: "application" | "eligibility";
+  /** Çift yerleşim onayı: pending satırında kim bekliyor gösterilir */
+  coordinatorPlacementApproved?: boolean;
+  companyPlacementApproved?: boolean;
 }
 
-export function StatusBadge({ status, type = "application" }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  type = "application",
+  coordinatorPlacementApproved,
+  companyPlacementApproved,
+}: StatusBadgeProps) {
   if (type === "eligibility") {
     const eligibilityStatus = status as EligibilityStatus;
     switch (eligibilityStatus) {
@@ -20,9 +28,20 @@ export function StatusBadge({ status, type = "application" }: StatusBadgeProps) 
   }
 
   const applicationStatus = status as ApplicationStatus;
+  const dualGateDefined =
+    coordinatorPlacementApproved !== undefined && companyPlacementApproved !== undefined;
+
   switch (applicationStatus) {
     case "pending":
-      return <Badge variant="warning">Pending</Badge>;
+      if (dualGateDefined) {
+        if (coordinatorPlacementApproved && companyPlacementApproved)
+          return <Badge variant="success">Approved</Badge>;
+        if (coordinatorPlacementApproved && !companyPlacementApproved)
+          return <Badge variant="warning">Awaiting company</Badge>;
+        if (!coordinatorPlacementApproved && companyPlacementApproved)
+          return <Badge variant="warning">Awaiting coordinator</Badge>;
+      }
+      return <Badge variant="warning">Pending review</Badge>;
     case "approved":
       return <Badge variant="success">Approved</Badge>;
     case "rejected":

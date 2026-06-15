@@ -2,18 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "success" | "info" | "warning" | "error";
-  date: Date;
-  read: boolean;
-}
+import { StudentNotification } from "@/types";
 
 interface NotificationsFeedProps {
-  notifications: Notification[];
+  notifications: StudentNotification[];
   onMarkAsRead?: (id: string) => void;
 }
 

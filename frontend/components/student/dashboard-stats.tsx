@@ -77,7 +77,7 @@ export function DashboardStats({
       <StatCard
         title="Logbook Entries"
         value={logbookEntries}
-        description="This month"
+        description="Total entries"
         icon={BookOpen}
       />
       <StatCard

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X, Calendar } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface LogbookFiltersProps {
   searchTerm: string;
@@ -61,12 +61,13 @@ export function LogbookFilters({
 
         <Select value={feedbackFilter} onValueChange={onFeedbackFilterChange}>
           <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Feedback" />
+            <SelectValue placeholder="Supervisor review" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Entries</SelectItem>
-            <SelectItem value="with_feedback">With Feedback</SelectItem>
-            <SelectItem value="pending">Pending Feedback</SelectItem>
+            <SelectItem value="all">All entries</SelectItem>
+            <SelectItem value="still_editable">Still editable</SelectItem>
+            <SelectItem value="locked">Locked (feedback or sign-off)</SelectItem>
+            <SelectItem value="has_feedback_text">Has written feedback</SelectItem>
           </SelectContent>
         </Select>
 

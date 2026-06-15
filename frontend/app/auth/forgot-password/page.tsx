@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/layout/brand-logo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -25,8 +26,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="w-full max-w-md">
+    <div className="auth-page-shell">
+      <BrandLogo href="/auth/login" variant="auth" />
+      <Card className="w-full max-w-md shadow-lg border-border/80">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Forgot Password</CardTitle>
           <CardDescription>

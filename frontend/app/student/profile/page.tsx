@@ -6,9 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToastContext } from "@/components/providers/toast-provider";
 import { User, Mail, GraduationCap, Calendar, Camera } from "lucide-react";
+import Image from "next/image";
 import { getMe, getProfile, updateProfile } from "@/lib/api";
+import { fetchStudentDepartments } from "@/lib/departments";
 
 // Form için varsayılan profil alanları
 const defaultProfile = {
@@ -17,6 +26,11 @@ const defaultProfile = {
   studentId: "",
   department: "",
   currentSemester: 7,
+  cgpa: "",
+  homeAddress: "",
+  homeTelephone: "",
+  mobileTelephone: "",
+  addressNorthCyprus: "",
   photo: undefined as string | undefined,
 };
 
@@ -30,10 +44,17 @@ export default function ProfilePage() {
   const [initialProfileData, setInitialProfileData] = useState(defaultProfile);
   const [userId, setUserId] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [deptList, setDeptList] = useState<string[]>([]);
+  const [deptLoading, setDeptLoading] = useState(false);
 
   const loadProfile = async (id: string) => {
     const apiUser = await getProfile(id);
     if (!apiUser) return;
+
+    setDeptLoading(true);
+    const depts = await fetchStudentDepartments(apiUser.department);
+    setDeptList(depts);
+    setDeptLoading(false);
 
     const nextProfile = {
       name: apiUser.name,
@@ -41,6 +62,11 @@ export default function ProfilePage() {
       studentId: apiUser.studentId || "",
       department: apiUser.department || "",
       currentSemester: apiUser.currentSemester ?? 7,
+      cgpa: apiUser.cgpa != null ? String(apiUser.cgpa) : "",
+      homeAddress: apiUser.homeAddress || "",
+      homeTelephone: apiUser.homeTelephone || "",
+      mobileTelephone: apiUser.mobileTelephone || "",
+      addressNorthCyprus: apiUser.addressNorthCyprus || "",
       photo: apiUser.photo,
     };
     setProfileData(nextProfile);
@@ -62,22 +88,39 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!userId) return;
     setSaving(true);
-    const result = await updateProfile(userId, {
+    const payload: Parameters<typeof updateProfile>[1] = {
       name: profileData.name,
       email: profileData.email || undefined,
       studentId: profileData.studentId || undefined,
       department: profileData.department || undefined,
       currentSemester: profileData.currentSemester,
+      homeAddress: profileData.homeAddress.trim() || null,
+      homeTelephone: profileData.homeTelephone.trim() || null,
+      mobileTelephone: profileData.mobileTelephone.trim() || null,
+      addressNorthCyprus: profileData.addressNorthCyprus.trim() || null,
       photo: profileData.photo,
-    });
+    };
+    const cgpaParsed = parseFloat(profileData.cgpa.trim().replace(",", "."));
+    if (profileData.cgpa.trim() !== "" && !Number.isNaN(cgpaParsed)) {
+      payload.cgpa = cgpaParsed;
+    }
+
+    const result = await updateProfile(userId, payload);
     setSaving(false);
     if (result.success) {
+      const depts = await fetchStudentDepartments(result.user.department);
+      setDeptList(depts);
       const nextProfile = {
         name: result.user.name,
         email: result.user.email,
         studentId: result.user.studentId || "",
         department: result.user.department || "",
         currentSemester: result.user.currentSemester ?? 7,
+        cgpa: result.user.cgpa != null ? String(result.user.cgpa) : "",
+        homeAddress: result.user.homeAddress || "",
+        homeTelephone: result.user.homeTelephone || "",
+        mobileTelephone: result.user.mobileTelephone || "",
+        addressNorthCyprus: result.user.addressNorthCyprus || "",
         photo: result.user.photo,
       };
       setProfileData(nextProfile);
@@ -134,10 +177,13 @@ export default function ProfilePage() {
               <div className="relative group">
                 <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 overflow-hidden">
                   {profileData.photo ? (
-                    <img
+                    <Image
                       src={profileData.photo}
                       alt={profileData.name}
+                      width={128}
+                      height={128}
                       className="h-32 w-32 rounded-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <User className="h-16 w-16 text-primary" />
@@ -262,14 +308,32 @@ export default function ProfilePage() {
                   Department
                 </Label>
                 {isEditing ? (
-                  <Input
-                    value={profileData.department}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, department: e.target.value })
-                    }
-                  />
+                  deptLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading departments…</p>
+                  ) : deptList.length === 0 ? (
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      No departments are configured yet. Your coordinator must publish the
+                      department list in Settings.
+                    </p>
+                  ) : (
+                    <Select
+                      value={profileData.department || undefined}
+                      onValueChange={(v) => setProfileData({ ...profileData, department: v })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deptList.map((d) => (
+                          <SelectItem key={d} value={d}>
+                            {d}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
                 ) : (
-                  <p className="text-sm font-medium">{profileData.department}</p>
+                  <p className="text-sm font-medium">{profileData.department || "—"}</p>
                 )}
               </div>
 
@@ -293,6 +357,88 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <p className="text-sm font-medium">Semester {profileData.currentSemester}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>Contact &amp; logbook export</CardTitle>
+            <CardDescription>
+              Used on your internship logbook Word export (CGPA, addresses, phone numbers).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label>CGPA</Label>
+                {isEditing ? (
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 3.45"
+                    value={profileData.cgpa}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, cgpa: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="text-sm font-medium">
+                    {profileData.cgpa.trim() !== "" ? profileData.cgpa : "—"}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2 md:col-span-2 lg:col-span-2">
+                <Label>Home address</Label>
+                {isEditing ? (
+                  <Input
+                    value={profileData.homeAddress}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, homeAddress: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="text-sm font-medium">{profileData.homeAddress || "—"}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Home telephone</Label>
+                {isEditing ? (
+                  <Input
+                    value={profileData.homeTelephone}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, homeTelephone: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="text-sm font-medium">{profileData.homeTelephone || "—"}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Mobile telephone</Label>
+                {isEditing ? (
+                  <Input
+                    value={profileData.mobileTelephone}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, mobileTelephone: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="text-sm font-medium">{profileData.mobileTelephone || "—"}</p>
+                )}
+              </div>
+              <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                <Label>Address in North Cyprus</Label>
+                {isEditing ? (
+                  <Input
+                    value={profileData.addressNorthCyprus}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, addressNorthCyprus: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="text-sm font-medium">{profileData.addressNorthCyprus || "—"}</p>
                 )}
               </div>
             </div>

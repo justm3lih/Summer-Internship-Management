@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using InternshipManagement.API.Data;
+using InternshipManagement.API.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// API anahtarları gibi gizli değerler için yerel (gitignored) config dosyası
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // Veritabanı: appsettings'te UseInMemoryDatabase true ise bellek içi DB, değilse PostgreSQL kullan
 var useInMemory = builder.Configuration.GetValue<bool>("UseInMemoryDatabase");
@@ -33,6 +37,14 @@ builder.Services.AddCors(options =>
 // Controller'ları ve OpenAPI (Swagger) servisini ekle
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<InternshipManagement.API.Services.ICoordinatorPortalRoleService,
+    InternshipManagement.API.Services.CoordinatorPortalRoleService>();
+builder.Services.AddSingleton<InternshipManagement.API.Services.PdfImportService>();
+builder.Services.AddHttpClient<InternshipManagement.API.Services.Ai.GeminiService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
 
@@ -40,6 +52,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     if (useInMemory)
     {
         db.Database.EnsureCreated();  // Bellek DB için tabloları oluştur
@@ -52,11 +65,48 @@ using (var scope = app.Services.CreateScope())
         }
         catch (Exception ex)
         {
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogWarning(ex, "PostgreSQL migration failed. Use UseInMemoryDatabase: true in appsettings.Development.json to continue.");
         }
     }
-    SeedData.EnsureSeedUsersAsync(db).GetAwaiter().GetResult();  // Örnek 4 kullanıcı yoksa ekle
+
+    var resetKeepingAdmins = builder.Configuration.GetValue<bool>("Seed:ResetKeepingAdminsOnStartup");
+    if (resetKeepingAdmins)
+    {
+        SeedData.ClearOperationalDataKeepingAdminsAsync(db).GetAwaiter().GetResult();
+        SeedData.EnsureSeedDefaultAdminIfMissingAsync(db).GetAwaiter().GetResult();
+        logger.LogWarning(
+            "Seed:ResetKeepingAdminsOnStartup was true: operational data cleared; only admin users remain. Set it back to false before the next restart.");
+    }
+    else
+    {
+        SeedData.EnsureSeedUsersAsync(db).GetAwaiter().GetResult(); // İlk kurulum / eksik demo verisi
+    }
+
+    // Eski veri: yerleşim iki taraftan onaylı ama AcceptanceLetterVerifiedAt boş → günlük kilitli kalıyordu.
+    if (!useInMemory)
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            var n = db.Applications
+                .Where(a =>
+                    (a.Status == "approved" || a.Status == "ongoing" || a.Status == "completed") &&
+                    a.CoordinatorPlacementApprovedAt != null &&
+                    a.CompanyPlacementApprovedAt != null &&
+                    a.AcceptanceLetterVerifiedAt == null)
+                .ExecuteUpdate(setters => setters.SetProperty(a => a.AcceptanceLetterVerifiedAt, now));
+            if (n > 0)
+            {
+                logger.LogInformation(
+                    "Backfilled AcceptanceLetterVerifiedAt on {Count} application(s) with dual placement approval.",
+                    n);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "AcceptanceLetterVerifiedAt backfill skipped.");
+        }
+    }
 }
 
 // Geliştirme ortamında OpenAPI dokümanı aç

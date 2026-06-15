@@ -24,50 +24,69 @@
 
 @layer base {
   :root {
-    /* Light mode - slightly darker than #f1f1f1 */
-    --background: 0 0% 90%; /* Slightly darker light gray */
-    --foreground: 222.2 47.4% 11.2%;
-    --card: 0 0% 98%;
-    --card-foreground: 222.2 47.4% 11.2%;
-    --popover: 0 0% 98%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 92%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 92%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 92%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 80%;
-    --input: 214.3 31.8% 80%;
-    --ring: 221.2 83.2% 53.3%;
+    /* CIU palette: maroon primary (#922724), orange accent (#F15A24), warm neutrals */
+    --background: 35 28% 96%;
+    --foreground: 0 3% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 3% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 3% 18%;
+    --primary: 2 58% 36%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 14 28% 93%;
+    --secondary-foreground: 0 3% 18%;
+    --muted: 25 18% 92%;
+    --muted-foreground: 0 3% 40%;
+    --accent: 14 42% 94%;
+    --accent-foreground: 2 58% 28%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 25 14% 86%;
+    --input: 25 14% 86%;
+    --ring: 14 88% 53%;
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark mode - slightly darker */
-    --background: 0 0% 13%; /* Slightly darker */
-    --foreground: 210 40% 98%;
-    --card: 0 0% 17%; /* Slightly darker than background */
-    --card-foreground: 210 40% 98%;
-    --popover: 0 0% 17%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 0 0% 22%; /* Slightly darker */
-    --secondary-foreground: 210 40% 98%;
-    --muted: 0 0% 22%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 0 0% 22%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 27%; /* Slightly darker borders */
-    --input: 0 0% 27%;
-    --ring: 224.3 76.3% 48%;
+    --background: 2 28% 9%;
+    --foreground: 35 12% 96%;
+    --card: 2 22% 12%;
+    --card-foreground: 35 12% 96%;
+    --popover: 2 22% 12%;
+    --popover-foreground: 35 12% 96%;
+    --primary: 14 82% 54%;
+    --primary-foreground: 2 35% 10%;
+    --secondary: 2 18% 18%;
+    --secondary-foreground: 35 12% 96%;
+    --muted: 2 16% 18%;
+    --muted-foreground: 25 10% 68%;
+    --accent: 2 22% 18%;
+    --accent-foreground: 14 75% 72%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 2 14% 22%;
+    --input: 2 14% 22%;
+    --ring: 14 82% 54%;
+  }
+}
+
+@layer components {
+  .auth-page-shell {
+    @apply flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12;
+    background: linear-gradient(
+      to bottom right,
+      hsl(35 28% 96%),
+      hsl(14 38% 93%),
+      hsl(2 22% 88%)
+    );
+  }
+  .dark .auth-page-shell {
+    background: linear-gradient(
+      to bottom right,
+      hsl(2 28% 9%),
+      hsl(2 22% 12%),
+      hsl(14 18% 14%)
+    );
   }
 }
 

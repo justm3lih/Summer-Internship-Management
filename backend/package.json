@@ -1,0 +1,9 @@
+{
+  "name": "internship-management-api",
+  "private": true,
+  "scripts": {
+    "dev": "dotnet watch run",
+    "start": "dotnet run",
+    "build": "dotnet build"
+  }
+}

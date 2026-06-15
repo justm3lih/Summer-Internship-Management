@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using InternshipManagement.API.Configuration;
 using InternshipManagement.API.Data;
 using InternshipManagement.API.DTOs;
 using InternshipManagement.API.Models;
+using InternshipManagement.API.Services;
+using InternshipManagement.API.Services.Notifications;
 
 namespace InternshipManagement.API.Controllers
 {
@@ -13,10 +16,17 @@ namespace InternshipManagement.API.Controllers
     {
         private const string AuthCookieName = "internship_auth_user_id";
         private readonly AppDbContext _db;
+        private readonly NotificationService _notificationService;
+        private readonly ICoordinatorPortalRoleService _coordinatorPortalRoles;
 
-        public AuthController(AppDbContext db)
+        public AuthController(
+            AppDbContext db,
+            NotificationService notificationService,
+            ICoordinatorPortalRoleService coordinatorPortalRoles)
         {
             _db = db;
+            _notificationService = notificationService;
+            _coordinatorPortalRoles = coordinatorPortalRoles;
         }
 
         // POST api/auth/login - E-posta ve şifre ile giriş
@@ -32,6 +42,8 @@ namespace InternshipManagement.API.Controllers
             if (user == null || user.Password != request.Password)
                 return Unauthorized(new { message = "Invalid email or password." });
 
+            var coordinatorPortal = await _coordinatorPortalRoles.IsCoordinatorPortalRoleAsync(user.Role, cancellationToken);
+
             // Yanıtta şifreyi gönderme; sadece kullanıcı bilgilerini döndür
             var response = new
             {
@@ -39,14 +51,26 @@ namespace InternshipManagement.API.Controllers
                 email = user.Email,
                 name = user.Name,
                 role = user.Role,
+                coordinatorPortal,
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
+                cgpa = user.Cgpa,
+                homeAddress = user.HomeAddress,
+                homeTelephone = user.HomeTelephone,
+                mobileTelephone = user.MobileTelephone,
+                addressNorthCyprus = user.AddressNorthCyprus,
                 photo = user.Photo,
                 eligibilityStatus = user.EligibilityStatus,
                 passedThirdYearCourses = user.PassedThirdYearCourses,
                 requiredThirdYearCourses = user.RequiredThirdYearCourses,
-                transcriptVerifiedAt = user.TranscriptVerifiedAt
+                transcriptVerifiedAt = user.TranscriptVerifiedAt,
+                thirdYearCourseGradesJson = user.ThirdYearCourseGradesJson,
+                permissions = user.Permissions ?? System.Array.Empty<string>(),
+                companyId = user.CompanyId,
+                companyMembershipTier = user.CompanyMembershipTier,
+                managedByCompanyUserId = user.ManagedByCompanyUserId,
+                advisorUserId = user.AdvisorUserId
             };
 
             // Giriş yapan kullanıcı id'sini cookie olarak sakla (frontend localStorage'a ihtiyaç duymasın)
@@ -70,6 +94,13 @@ namespace InternshipManagement.API.Controllers
             if (await _db.Users.AnyAsync(u => u.Email == request.Email, cancellationToken))
                 return BadRequest(new { message = "This email is already registered." });
 
+            var allowed = await StudentDepartmentOptions.GetAllowedAsync(_db, cancellationToken);
+            if (allowed.Count == 0)
+                return BadRequest(new { message = "Kayıt için henüz bölüm listesi tanımlı değil. Koordinatöre danışın." });
+            var canonicalDept = StudentDepartmentOptions.Canonicalize(request.Department, allowed);
+            if (canonicalDept == null)
+                return BadRequest(new { message = "Seçilen bölüm geçerli değil. Sayfayı yenileyip tekrar deneyin." });
+
             // Yeni kullanıcı oluştur (rol her zaman "student")
             var user = new User
             {
@@ -77,11 +108,21 @@ namespace InternshipManagement.API.Controllers
                 Name = request.Name,
                 Password = request.Password,
                 Role = "student",
-                StudentId = request.StudentId
+                StudentId = request.StudentId,
+                Department = canonicalDept
             };
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync(cancellationToken);
+
+            await _notificationService.CreateNotificationsForRoleAsync(
+                "coordinator",
+                "New Student Registered",
+                $"{user.Name} created a new student account.",
+                "info",
+                "user",
+                user.Id,
+                cancellationToken);
 
             var response = new
             {
@@ -89,14 +130,26 @@ namespace InternshipManagement.API.Controllers
                 email = user.Email,
                 name = user.Name,
                 role = user.Role,
+                coordinatorPortal = false,
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
+                cgpa = user.Cgpa,
+                homeAddress = user.HomeAddress,
+                homeTelephone = user.HomeTelephone,
+                mobileTelephone = user.MobileTelephone,
+                addressNorthCyprus = user.AddressNorthCyprus,
                 photo = user.Photo,
                 eligibilityStatus = user.EligibilityStatus,
                 passedThirdYearCourses = user.PassedThirdYearCourses,
                 requiredThirdYearCourses = user.RequiredThirdYearCourses,
-                transcriptVerifiedAt = user.TranscriptVerifiedAt
+                transcriptVerifiedAt = user.TranscriptVerifiedAt,
+                thirdYearCourseGradesJson = user.ThirdYearCourseGradesJson,
+                permissions = user.Permissions ?? System.Array.Empty<string>(),
+                companyId = user.CompanyId,
+                companyMembershipTier = user.CompanyMembershipTier,
+                managedByCompanyUserId = user.ManagedByCompanyUserId,
+                advisorUserId = user.AdvisorUserId
             };
 
             // Kayıttan sonra kullanıcıyı otomatik oturum açmış kabul et (cookie yaz)
@@ -129,20 +182,34 @@ namespace InternshipManagement.API.Controllers
                 return Unauthorized(new { message = "Not authenticated." });
             }
 
+            var coordinatorPortal = await _coordinatorPortalRoles.IsCoordinatorPortalRoleAsync(user.Role, cancellationToken);
+
             return Ok(new
             {
                 id = user.Id,
                 email = user.Email,
                 name = user.Name,
                 role = user.Role,
+                coordinatorPortal,
                 studentId = user.StudentId,
                 department = user.Department,
                 currentSemester = user.CurrentSemester,
+                cgpa = user.Cgpa,
+                homeAddress = user.HomeAddress,
+                homeTelephone = user.HomeTelephone,
+                mobileTelephone = user.MobileTelephone,
+                addressNorthCyprus = user.AddressNorthCyprus,
                 photo = user.Photo,
                 eligibilityStatus = user.EligibilityStatus,
                 passedThirdYearCourses = user.PassedThirdYearCourses,
                 requiredThirdYearCourses = user.RequiredThirdYearCourses,
-                transcriptVerifiedAt = user.TranscriptVerifiedAt
+                transcriptVerifiedAt = user.TranscriptVerifiedAt,
+                thirdYearCourseGradesJson = user.ThirdYearCourseGradesJson,
+                permissions = user.Permissions ?? System.Array.Empty<string>(),
+                companyId = user.CompanyId,
+                companyMembershipTier = user.CompanyMembershipTier,
+                managedByCompanyUserId = user.ManagedByCompanyUserId,
+                advisorUserId = user.AdvisorUserId
             });
         }
 

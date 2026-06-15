@@ -17,15 +17,47 @@ namespace InternshipManagement.API.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("InternshipManagement.API.Models.AppSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("AppSettings");
+                });
 
             modelBuilder.Entity("InternshipManagement.API.Models.Application", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
+
+                    b.Property<string>("AcceptanceLetterCoordinatorComments")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("AcceptanceLetterPortalJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AcceptanceLetterSubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AcceptanceLetterUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AcceptanceLetterVerifiedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("AppliedDate")
                         .HasColumnType("timestamp with time zone");
@@ -37,11 +69,35 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("CompanyPlacementApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CompanySupervisorUserId")
+                        .HasColumnType("text");
+
                     b.Property<string>("CoordinatorComments")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("CoordinatorPlacementApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("CvUrl")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("InternshipEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("InternshipStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LogbookSubmittedForCoordinatorReviewAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LogbookSubmittedToSupervisorAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LogbookVerifiedByCoordinatorAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MotivationLetterUrl")
                         .HasColumnType("text");
@@ -54,12 +110,128 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SupervisorAcademicDegrees")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorDepartmentOrDivision")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("SupervisorEvalPo1")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo10")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo11")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo2")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo3")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo4")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo5")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo6")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo7")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo8")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorEvalPo9")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SupervisorEvaluationCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SupervisorGraduatedUniversity")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorGraduationYear")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorOverallPerformanceObservations")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("SupervisorSpecialty")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorSuggestionsToUniversityAboutTrainee")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("SupervisorTitle")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorYearsExperience")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SupervisorYearsInCompany")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TraineeDepartmentOrDivision")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TraineeJobOwnWords")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("TraineeJobTitle")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("TraineeSummerSelfEval1")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval10")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval11")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval12")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval2")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval3")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval4")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval5")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval6")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval7")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval8")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TraineeSummerSelfEval9")
+                        .HasColumnType("integer");
+
                     b.Property<string>("TranscriptUrl")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("CompanySupervisorUserId");
 
                     b.HasIndex("StudentId");
 
@@ -71,13 +243,29 @@ namespace InternshipManagement.API.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("Approved")
                         .HasColumnType("boolean");
 
                     b.Property<double?>("AverageRating")
                         .HasColumnType("double precision");
 
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Fax")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FieldsOfWork")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -89,6 +277,10 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("PositionsOffered")
                         .HasColumnType("integer");
 
@@ -96,42 +288,13 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Website")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.ToTable("Companies");
-                });
-
-            modelBuilder.Entity("InternshipManagement.API.Models.Course", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Grade")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Passed")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Semester")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("InternshipManagement.API.Models.FinalReport", b =>
@@ -167,6 +330,40 @@ namespace InternshipManagement.API.Migrations
                     b.ToTable("FinalReports");
                 });
 
+            modelBuilder.Entity("InternshipManagement.API.Models.KnowledgeBaseEntry", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AuthorId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AuthorName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KnowledgeBaseEntries");
+                });
+
             modelBuilder.Entity("InternshipManagement.API.Models.LogbookEntry", b =>
                 {
                     b.Property<string>("Id")
@@ -189,6 +386,12 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("SupervisorApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SupervisorApprovedByUserId")
+                        .HasColumnType("text");
+
                     b.Property<string>("SupervisorFeedback")
                         .HasColumnType("text");
 
@@ -199,12 +402,324 @@ namespace InternshipManagement.API.Migrations
 
                     b.HasIndex("StudentId");
 
+                    b.HasIndex("SupervisorApprovedByUserId");
+
                     b.ToTable("LogbookEntries");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.LogbookWeeklyApproval", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("WeekStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByUserId");
+
+                    b.HasIndex("StudentId", "WeekStartUtc")
+                        .IsUnique();
+
+                    b.ToTable("LogbookWeeklyApprovals");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.Notification", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RelatedEntityId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.StaffRoleDefinition", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("StaffRoleDefinitions");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.SummerTrainingApplicationLetter", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AcademicPeriodKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("AdvisorApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AdvisorComments")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("AdvisorRejectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CoordinatorApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CoordinatorApproverName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("CoordinatorComments")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CoordinatorRejectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CourseRowsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime?>("StudentElectronicAcceptanceAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SubmittedToAdvisorAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId", "AcademicPeriodKey")
+                        .IsUnique();
+
+                    b.ToTable("SummerTrainingApplicationLetters");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReport", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CoordinatorFeedback")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId")
+                        .IsUnique();
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("TrainingReports");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReportFigure", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Caption")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TrainingReportId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrainingReportId");
+
+                    b.ToTable("TrainingReportFigures");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReportSubmissionSnapshot", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TrainingReportId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TrainingReportId");
+
+                    b.ToTable("TrainingReportSubmissionSnapshots");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.UploadedFile", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OriginalName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UploadedFiles");
                 });
 
             modelBuilder.Entity("InternshipManagement.API.Models.User", b =>
                 {
                     b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AddressNorthCyprus")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AdvisorUserId")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("Cgpa")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("CompanyId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyMembershipTier")
                         .HasColumnType("text");
 
                     b.Property<int?>("CurrentSemester")
@@ -220,6 +735,18 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("HomeAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HomeTelephone")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ManagedByCompanyUserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MobileTelephone")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -229,6 +756,9 @@ namespace InternshipManagement.API.Migrations
 
                     b.Property<string>("Password")
                         .HasColumnType("text");
+
+                    b.PrimitiveCollection<string[]>("Permissions")
+                        .HasColumnType("text[]");
 
                     b.Property<string>("Photo")
                         .HasColumnType("text");
@@ -243,10 +773,17 @@ namespace InternshipManagement.API.Migrations
                     b.Property<string>("StudentId")
                         .HasColumnType("text");
 
+                    b.Property<string>("ThirdYearCourseGradesJson")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("TranscriptVerifiedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AdvisorUserId");
+
+                    b.HasIndex("ManagedByCompanyUserId");
 
                     b.ToTable("Users");
                 });
@@ -259,6 +796,11 @@ namespace InternshipManagement.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("InternshipManagement.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("CompanySupervisorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("InternshipManagement.API.Models.User", "Student")
                         .WithMany("Applications")
                         .HasForeignKey("StudentId")
@@ -266,17 +808,6 @@ namespace InternshipManagement.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Company");
-
-                    b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("InternshipManagement.API.Models.Course", b =>
-                {
-                    b.HasOne("InternshipManagement.API.Models.User", "Student")
-                        .WithMany("Courses")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Student");
                 });
@@ -298,7 +829,112 @@ namespace InternshipManagement.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("InternshipManagement.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("SupervisorApprovedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.LogbookWeeklyApproval", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InternshipManagement.API.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.Notification", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.SummerTrainingApplicationLetter", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReport", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.Application", "Application")
+                        .WithOne("TrainingReport")
+                        .HasForeignKey("InternshipManagement.API.Models.TrainingReport", "ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InternshipManagement.API.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReportFigure", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.TrainingReport", "TrainingReport")
+                        .WithMany("Figures")
+                        .HasForeignKey("TrainingReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TrainingReport");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReportSubmissionSnapshot", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.TrainingReport", "TrainingReport")
+                        .WithMany("SubmissionSnapshots")
+                        .HasForeignKey("TrainingReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TrainingReport");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.User", b =>
+                {
+                    b.HasOne("InternshipManagement.API.Models.User", "AdvisorUser")
+                        .WithMany()
+                        .HasForeignKey("AdvisorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("InternshipManagement.API.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ManagedByCompanyUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AdvisorUser");
+                });
+
+            modelBuilder.Entity("InternshipManagement.API.Models.Application", b =>
+                {
+                    b.Navigation("TrainingReport");
                 });
 
             modelBuilder.Entity("InternshipManagement.API.Models.Company", b =>
@@ -306,15 +942,22 @@ namespace InternshipManagement.API.Migrations
                     b.Navigation("Applications");
                 });
 
+            modelBuilder.Entity("InternshipManagement.API.Models.TrainingReport", b =>
+                {
+                    b.Navigation("Figures");
+
+                    b.Navigation("SubmissionSnapshots");
+                });
+
             modelBuilder.Entity("InternshipManagement.API.Models.User", b =>
                 {
                     b.Navigation("Applications");
 
-                    b.Navigation("Courses");
-
                     b.Navigation("FinalReport");
 
                     b.Navigation("LogbookEntries");
+
+                    b.Navigation("Notifications");
                 });
 #pragma warning restore 612, 618
         }

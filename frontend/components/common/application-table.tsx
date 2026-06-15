@@ -3,38 +3,46 @@ import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export interface ApplicationTableColumn {
+type TableRowData = {
+  id?: string;
+};
+
+export interface ApplicationTableColumn<TRow extends TableRowData = TableRowData> {
   key: string;
   label: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: unknown, row: TRow) => React.ReactNode;
 }
 
-interface ApplicationTableProps {
-  columns: ApplicationTableColumn[];
-  data: any[];
-  actions?: Array<{
-    icon: LucideIcon;
-    onClick: (row: any) => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-    className?: string;
-    show?: (row: any) => boolean;
-  }>;
+export interface ApplicationTableAction<TRow extends TableRowData = TableRowData> {
+  icon: LucideIcon;
+  onClick: (row: TRow) => void;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  className?: string;
+  show?: (row: TRow) => boolean;
+}
+
+interface ApplicationTableProps<TRow extends TableRowData = TableRowData> {
+  columns: ApplicationTableColumn<TRow>[];
+  data: TRow[];
+  actions?: ApplicationTableAction<TRow>[];
   selectable?: boolean;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
 }
 
-export function ApplicationTable({
+export function ApplicationTable<TRow extends TableRowData>({
   columns,
   data,
   actions,
   selectable = false,
   selectedIds = [],
   onSelectionChange,
-}: ApplicationTableProps) {
+}: ApplicationTableProps<TRow>) {
   const handleSelectAll = (checked: boolean) => {
     if (onSelectionChange) {
-      onSelectionChange(checked ? data.map((row) => row.id) : []);
+      onSelectionChange(
+        checked ? data.map((row) => row.id).filter((id): id is string => typeof id === "string") : []
+      );
     }
   };
 
@@ -86,13 +94,13 @@ export function ApplicationTable({
           </TableRow>
         ) : (
           data.map((row, rowIndex) => (
-            <TableRow key={row.id || rowIndex}>
+            <TableRow key={row.id ?? rowIndex}>
               {selectable && (
                 <TableCell>
                   <Checkbox
-                    checked={selectedIds.includes(row.id)}
+                    checked={typeof row.id === "string" ? selectedIds.includes(row.id) : false}
                     onCheckedChange={(checked) =>
-                      handleSelectRow(row.id, checked as boolean)
+                      handleSelectRow(row.id ?? String(rowIndex), checked as boolean)
                     }
                   />
                 </TableCell>
@@ -100,8 +108,8 @@ export function ApplicationTable({
               {columns.map((column) => (
                 <TableCell key={column.key}>
                   {column.render
-                    ? column.render(row[column.key], row)
-                    : row[column.key]}
+                    ? column.render((row as Record<string, unknown>)[column.key], row)
+                    : ((row as Record<string, unknown>)[column.key] as React.ReactNode)}
                 </TableCell>
               ))}
               {actions && actions.length > 0 && (

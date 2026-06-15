@@ -18,6 +18,10 @@ namespace InternshipManagement.API.DTOs
         public string Name { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(200)]
+        public string Department { get; set; } = string.Empty;
+
+        [Required]
         [MinLength(6)]  // En az 6 karakter
         public string Password { get; set; } = string.Empty;
     }

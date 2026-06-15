@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToastContext } from "@/components/providers/toast-provider";
 import { Save, X } from "lucide-react";
 
 interface ApplicationCommentModalProps {
@@ -14,7 +13,7 @@ interface ApplicationCommentModalProps {
   currentComment?: string;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (comment: string) => void;
+  onSave: (comment: string) => Promise<void> | void;
 }
 
 export function ApplicationCommentModal({
@@ -25,13 +24,21 @@ export function ApplicationCommentModal({
   onClose,
   onSave,
 }: ApplicationCommentModalProps) {
-  const { showToast } = useToastContext();
   const [comment, setComment] = useState(currentComment || "");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    onSave(comment);
-    showToast("Comment saved successfully", "success");
-    onClose();
+  useEffect(() => {
+    setComment(currentComment || "");
+  }, [currentComment, applicationId, isOpen]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave(comment);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -59,7 +66,7 @@ export function ApplicationCommentModal({
             <Button variant="outline" onClick={onClose}>
               <X className="mr-2 h-4 w-4" /> Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={isSaving}>
               <Save className="mr-2 h-4 w-4" /> Save Comment
             </Button>
           </div>

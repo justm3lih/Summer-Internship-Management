@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToastContext } from "@/components/providers/toast-provider";
 import { User as UserIcon, Mail, Camera } from "lucide-react";
+import Image from "next/image";
 import { getMe, getProfile, updateProfile } from "@/lib/api";
 
 const defaultProfile = {
@@ -120,10 +121,13 @@ export default function AdminProfilePage() {
               <div className="relative group">
                 <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary/10 overflow-hidden">
                   {profileData.photo ? (
-                    <img
+                    <Image
                       src={profileData.photo}
                       alt={profileData.name}
+                      width={128}
+                      height={128}
                       className="h-32 w-32 rounded-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <UserIcon className="h-16 w-16 text-primary" />

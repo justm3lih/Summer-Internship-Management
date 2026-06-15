@@ -1,216 +1,385 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/common/status-badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToastContext } from "@/components/providers/toast-provider";
-import { FileText, BookOpen, MessageSquare, Mail, CheckCircle2 } from "lucide-react";
-import { ApplicationStatus, EligibilityStatus } from "@/types";
-import { demoEligibility, demoLogbookEntries, demoFinalReport } from "@/lib/demo-data";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  CoordinatorStudentMonitoring,
+  type LogbookEntry,
+  type LogbookWeeklyApproval,
+} from "@/types";
 import { format } from "date-fns";
+import {
+  getCoordinatorLogbookForStudent,
+  getWeeklyApprovalsForStudent,
+  buildFileUrl,
+  downloadSummerApplicationLetterBlank,
+  downloadSummerApplicationLetterWord,
+  downloadLogbookWordExport,
+  updateProfile,
+  getCoordinatorAdvisorDirectory,
+} from "@/lib/api";
+import { useToastContext } from "@/components/providers/toast-provider";
+import { FileDown, FileText, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 interface StudentDetailModalProps {
-  student: any;
+  student: CoordinatorStudentMonitoring;
+  /** Ayarlardaki bölüm listesi; öğrencinin mevcut bölümü yoksa birleştirilir */
+  departmentOptions: string[];
   isOpen: boolean;
   onClose: () => void;
+  onDepartmentUpdated?: () => void;
+  onAdvisorUpdated?: () => void;
 }
 
 export function StudentDetailModal({
   student,
+  departmentOptions,
   isOpen,
   onClose,
+  onDepartmentUpdated,
+  onAdvisorUpdated,
 }: StudentDetailModalProps) {
   const { showToast } = useToastContext();
-  const [note, setNote] = useState("");
+  const [department, setDepartment] = useState(() => student.department || "");
+  const [saving, setSaving] = useState(false);
+  /** undefined = henüz yüklenmedi (modal yeni açıldı / öğrenci değişti) */
+  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[] | undefined>(undefined);
+  const [weeklyApprovals, setWeeklyApprovals] = useState<
+    LogbookWeeklyApproval[] | undefined
+  >(undefined);
+  const [wordExporting, setWordExporting] = useState(false);
+  const [summerLetterBlankExporting, setSummerLetterBlankExporting] = useState(false);
+  const [summerLetterFilledExporting, setSummerLetterFilledExporting] = useState(false);
 
-  const handleSendReminder = () => {
-    showToast(`Reminder sent to ${student.name}`, "success");
+  const [advisorPickList, setAdvisorPickList] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [advisorUserId, setAdvisorUserId] = useState(() => student.advisorUserId ?? "_none");
+  const [advisorSaving, setAdvisorSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    // Sıfırla: önceki öğrencinin satırları yeni yükleme bitene kadar görünmesin
+    queueMicrotask(() => {
+      if (!active) return;
+      setLogbookEntries(undefined);
+      setWeeklyApprovals(undefined);
+    });
+    Promise.all([
+      getCoordinatorLogbookForStudent(student.id),
+      getWeeklyApprovalsForStudent(student.id),
+    ]).then(([entries, weeks]) => {
+      if (!active) return;
+      setLogbookEntries(entries);
+      setWeeklyApprovals(weeks);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, student.id]);
+
+  useEffect(() => {
+    queueMicrotask(() => setDepartment(student.department || ""));
+  }, [student.id, student.department]);
+
+  useEffect(() => {
+    queueMicrotask(() => setAdvisorUserId(student.advisorUserId ?? "_none"));
+  }, [student.id, student.advisorUserId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void getCoordinatorAdvisorDirectory().then(setAdvisorPickList);
+  }, [isOpen]);
+
+  const departmentSelectOptions = useMemo(() => {
+    const d = student.department?.trim();
+    if (!d) return [...departmentOptions];
+    const inList = departmentOptions.some(
+      (x) => x.toLowerCase() === d.toLowerCase()
+    );
+    if (!inList) return [d, ...departmentOptions];
+    return [...departmentOptions];
+  }, [student.department, departmentOptions]);
+
+  const latestApplication = student.latestApplication;
+  const reportBadgeStatus =
+    student.reportStatus === "approved"
+      ? "approved"
+      : student.reportStatus === "rejected"
+        ? "rejected"
+        : student.reportStatus === "pending"
+          ? "pending"
+          : "not_applied";
+
+  const saveDepartment = async () => {
+    if (!department.trim()) {
+      showToast("Select a department", "error");
+      return;
+    }
+    if (department === (student.department || "")) {
+      showToast("No change to save", "info");
+      return;
+    }
+    setSaving(true);
+    const res = await updateProfile(student.id, { department: department.trim() });
+    setSaving(false);
+    if (!res.success) {
+      showToast(res.message, "error");
+      return;
+    }
+    showToast("Department updated", "success");
+    onDepartmentUpdated?.();
   };
 
-  const handleAddNote = () => {
-    if (note.trim()) {
-      showToast("Internal note added", "success");
-      setNote("");
+  const saveAdvisor = async () => {
+    const outgoing = advisorUserId === "_none" ? "" : advisorUserId;
+    const prev = student.advisorUserId ?? "";
+    if (outgoing === prev) {
+      showToast("No advisor change", "info");
+      return;
     }
+    setAdvisorSaving(true);
+    const res = await updateProfile(student.id, { advisorUserId: outgoing });
+    setAdvisorSaving(false);
+    if (!res.success) {
+      showToast(res.message, "error");
+      return;
+    }
+    showToast("Advisor updated", "success");
+    onAdvisorUpdated?.();
+  };
+
+  const handleWordExport = async () => {
+    setWordExporting(true);
+    const r = await downloadLogbookWordExport(student.id);
+    setWordExporting(false);
+    if (!r.success) {
+      showToast(r.message, "error");
+      return;
+    }
+    showToast("Word file downloaded.", "success");
+  };
+
+  const handleSummerLetterBlankExport = async () => {
+    setSummerLetterBlankExporting(true);
+    const r = await downloadSummerApplicationLetterBlank();
+    setSummerLetterBlankExporting(false);
+    if (!r.success) {
+      showToast(r.message, "error");
+      return;
+    }
+    showToast("Application letter template downloaded.", "success");
+  };
+
+  const handleSummerLetterFilledExport = async () => {
+    setSummerLetterFilledExporting(true);
+    const r = await downloadSummerApplicationLetterWord(student.id);
+    setSummerLetterFilledExporting(false);
+    if (!r.success) {
+      showToast(r.message, "error");
+      return;
+    }
+    showToast("Application letter Word downloaded.", "success");
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Student Details: {student.name}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
-            <TabsTrigger value="logbook">Logbook</TabsTrigger>
-            <TabsTrigger value="report">Report</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Student ID</Label>
-                <p className="text-sm font-medium">{student.studentId}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <p className="text-sm font-medium">{student.department}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Current Semester</Label>
-                <p className="text-sm font-medium">Semester {student.currentSemester}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Internship Status</Label>
-                <StatusBadge status={student.internshipStatus as ApplicationStatus} />
-              </div>
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <p className="text-sm font-medium">{student.email}</p>
             </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Actions</h3>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleSendReminder}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Reminder
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Internal Notes</Label>
-                <Textarea
-                  placeholder="Add internal notes about this student..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={3}
-                />
-                <Button onClick={handleAddNote} size="sm">
-                  Add Note
+            <div className="space-y-2">
+              <Label>Student ID</Label>
+              <p className="text-sm font-medium">{student.studentId || "N/A"}</p>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Department</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <Select value={department} onValueChange={setDepartment}>
+                  <SelectTrigger className="w-full sm:max-w-md">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departmentSelectOptions.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={saveDepartment} disabled={saving} className="shrink-0">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save department"}
                 </Button>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="eligibility" className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Eligibility Status</h3>
-                <StatusBadge
-                  status={demoEligibility.status}
-                  type="eligibility"
-                />
+            <div className="space-y-2 md:col-span-2">
+              <Label>Academic advisor (application letter)</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <Select value={advisorUserId} onValueChange={setAdvisorUserId}>
+                  <SelectTrigger className="w-full sm:max-w-lg">
+                    <SelectValue placeholder="Select advisor user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Not assigned</SelectItem>
+                    {advisorPickList.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} ({a.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={saveAdvisor} disabled={advisorSaving} className="shrink-0">
+                  {advisorSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save advisor"}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  {demoEligibility.passedCourses} / {demoEligibility.requiredCourses} required
-                  courses passed
-                </p>
-                <div className="space-y-2">
-                  <Label>Passed Courses</Label>
-                  <div className="space-y-1">
-                    {demoEligibility.courses
-                      .filter((c) => c.passed)
-                      .map((course) => (
-                        <div
-                          key={course.code}
-                          className="flex items-center justify-between rounded-lg border p-2"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">{course.code}</p>
-                            <p className="text-xs text-muted-foreground">{course.name}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">Semester {course.semester}</span>
-                            {course.grade && (
-                              <span className="text-sm font-medium">{course.grade}</span>
-                            )}
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Student must have an advisor before submitting the SWEN application letter.
+              </p>
             </div>
-          </TabsContent>
-
-          <TabsContent value="logbook" className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Logbook Entries</h3>
-                <span className="text-sm text-muted-foreground">
-                  {demoLogbookEntries.length} total entries
-                </span>
-              </div>
-              <div className="space-y-2">
-                {demoLogbookEntries.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-medium">
-                          {format(entry.date, "MMM dd, yyyy")}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {entry.hoursWorked} hours worked
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-sm mb-2">{entry.description}</p>
-                    {entry.supervisorFeedback && (
-                      <div className="mt-2 rounded-lg bg-muted p-2">
-                        <p className="text-xs font-medium mb-1">Supervisor Feedback:</p>
-                        <p className="text-xs">{entry.supervisorFeedback}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="report" className="space-y-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Final Report Status</h3>
-                <StatusBadge
-                  status={
-                    demoFinalReport.status === "not_submitted"
-                      ? "not_applied"
-                      : demoFinalReport.status === "approved"
-                      ? "approved"
-                      : demoFinalReport.status === "rejected"
-                      ? "rejected"
-                      : "pending"
+            <div className="space-y-2 md:col-span-2">
+              <Label>Application letter status</Label>
+              <p className="text-sm font-medium capitalize">
+                {student.summerTrainingLetterStatus ?? "Not created / no record for current period"}
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSummerLetterBlankExport}
+                  disabled={summerLetterBlankExporting}
+                >
+                  {summerLetterBlankExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown className="mr-1 h-4 w-4" />
+                  )}
+                  Application letter (blank template)
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSummerLetterFilledExport}
+                  disabled={
+                    summerLetterFilledExporting ||
+                    student.summerTrainingLetterStatus !== "approved"
                   }
-                />
+                  title={
+                    student.summerTrainingLetterStatus !== "approved"
+                      ? "Filled Word is available only after advisor and internship coordinator approval."
+                      : undefined
+                  }
+                >
+                  {summerLetterFilledExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown className="mr-1 h-4 w-4" />
+                  )}
+                  Application letter (filled)
+                </Button>
               </div>
-              {demoFinalReport.submittedDate && (
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Daily Logbook</Label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Link href={`/coordinator/logbooks/${student.id}`}>
+                  <Button type="button" variant="outline" size="sm">
+                    <FileText className="mr-1 h-4 w-4" />
+                    View Daily Logbook
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleWordExport}
+                  disabled={wordExporting}
+                >
+                  {wordExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown className="mr-1 h-4 w-4" />
+                  )}
+                  Export Logbook to Word
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Current Semester</Label>
+              <p className="text-sm font-medium">
+                {student.currentSemester ? `Semester ${student.currentSemester}` : "N/A"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Eligibility Status</Label>
+              <StatusBadge status={student.eligibilityStatus} type="eligibility" />
+            </div>
+            <div className="space-y-2">
+              <Label>Internship Status</Label>
+              <StatusBadge status={student.internshipStatus} />
+            </div>
+            <div className="space-y-2">
+              <Label>Final Report</Label>
+              <StatusBadge status={reportBadgeStatus} />
+            </div>
+          </div>
+
+
+          {latestApplication && (
+            <div className="space-y-4 rounded-lg border p-4">
+              <h3 className="font-semibold">Latest Application</h3>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Submitted Date</Label>
-                  <p className="text-sm">
-                    {format(demoFinalReport.submittedDate, "MMM dd, yyyy")}
+                  <Label>Company</Label>
+                  <p className="text-sm font-medium">{latestApplication.company?.name || "N/A"}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Date Applied</Label>
+                  <p className="text-sm font-medium">
+                    {format(latestApplication.appliedDate, "MMM dd, yyyy")}
                   </p>
                 </div>
-              )}
-              {demoFinalReport.coordinatorFeedback && (
                 <div className="space-y-2">
-                  <Label>Your Feedback</Label>
+                  <Label>Application Status</Label>
+                  <StatusBadge
+                    status={latestApplication.status}
+                    coordinatorPlacementApproved={
+                      latestApplication.coordinatorPlacementApprovedAt != null
+                    }
+                    companyPlacementApproved={latestApplication.companyPlacementApprovedAt != null}
+                  />
+                </div>
+              </div>
+
+              {latestApplication.coordinatorComments && (
+                <div className="space-y-2">
+                  <Label>Coordinator Comment</Label>
                   <div className="rounded-lg bg-muted p-3">
-                    <p className="text-sm">{demoFinalReport.coordinatorFeedback}</p>
+                    <p className="text-sm">{latestApplication.coordinatorComments}</p>
                   </div>
                 </div>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

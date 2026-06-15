@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { login } from "@/lib/api";
 
 /** Giriş sayfası: e-posta ve şifre ile API'ye login isteği atar, başarılıysa rol sayfasına yönlendirir */
@@ -25,8 +26,8 @@ export default function LoginPage() {
       const userData = await login(email, password);
 
       if (userData) {
-        // Giriş başarılı: backend cookie yazdığı için role göre sayfaya yönlendir
-        router.push(`/${userData.role}`);
+        const dest = userData.coordinatorPortal ? "/coordinator" : `/${userData.role}`;
+        router.push(dest);
       } else {
         setError("Invalid email or password.");
       }
@@ -39,8 +40,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="w-full max-w-md">
+    <div className="auth-page-shell">
+      <BrandLogo href="/auth/login" variant="auth" />
+      <Card className="w-full max-w-md shadow-lg border-border/80">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
@@ -54,13 +56,7 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            <div className="rounded-lg bg-muted p-3 text-xs">
-              <p className="font-medium mb-1">Test Credentials:</p>
-              <p>Student: student@university.edu / student123</p>
-              <p>Coordinator: coordinator@university.edu / coordinator123</p>
-              <p>Company: company@tech.com / company123</p>
-              <p>Admin: admin@university.edu / admin123</p>
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email / Student ID</Label>
               <Input
@@ -95,7 +91,7 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
             <div className="text-center text-sm">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <a href="/auth/register" className="text-primary hover:underline">
                 Register
               </a>

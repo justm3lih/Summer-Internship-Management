@@ -25,6 +25,20 @@ export default function AIAssistantPage() {
     },
   ];
 
+  const handleQuestionClick = (question: string) => {
+    const trigger = document.querySelector("[data-ai-chat-trigger]") as HTMLElement | null;
+    trigger?.click();
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('input[placeholder="Ask a question..."]');
+      if (input) {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+        setter?.call(input, question);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+      }
+    }, 200);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -45,13 +59,15 @@ export default function AIAssistantPage() {
               {commonQuestions.map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={index}
-                    className="flex items-center gap-3 rounded-lg border p-3 hover:bg-accent cursor-pointer transition-colors"
+                    onClick={() => handleQuestionClick(item.question)}
+                    className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent"
                   >
                     <Icon className="h-5 w-5 text-primary" />
                     <span className="text-sm">{item.question}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

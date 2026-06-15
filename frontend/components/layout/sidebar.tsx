@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { EligibilityStatus, UserRole } from "@/types";
+import { UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
+import { hasAnyPermission, hasPermission } from "@/lib/permissions";
+import { BrandLogo } from "@/components/layout/brand-logo";
+import { dashboardPathForUser } from "@/lib/dashboard-path";
 import {
   LayoutDashboard,
-  FileText,
   Briefcase,
   BookOpen,
   FileCheck,
@@ -24,23 +26,33 @@ import {
   ChevronRight,
   Menu,
   X,
+  GraduationCap,
+  ScrollText,
+  ListChecks,
+  FileSignature,
 } from "lucide-react";
 
 interface SidebarItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Varsayılan: bu yetki yoksa gizle */
+  permission?: string;
+  /** En az biri varsa göster (permission ile birlikte kullanılmaz). */
+  permissionsAny?: string[];
 }
 
 const studentMenu: SidebarItem[] = [
   { title: "Dashboard", href: "/student", icon: LayoutDashboard },
   { title: "Profile", href: "/student/profile", icon: User },
   { title: "Settings", href: "/student/settings", icon: Settings },
-  { title: "Upload Transcript", href: "/student/transcript", icon: FileText },
+  { title: "Application letter", href: "/student/summer-training-letter", icon: ScrollText },
+  { title: "Acceptance letter", href: "/student/acceptance-letter", icon: FileSignature },
   { title: "Apply for Internship", href: "/student/apply", icon: Briefcase },
+  { title: "Placement progress", href: "/student/placement", icon: ListChecks },
   { title: "My Applications", href: "/student/applications", icon: ClipboardList },
   { title: "Daily Logbook", href: "/student/logbook", icon: BookOpen },
-  { title: "Final Report", href: "/student/report", icon: FileCheck },
+  { title: "Training report (SWEN 300)", href: "/student/report", icon: FileCheck },
   { title: "Companies", href: "/student/companies", icon: Building2 },
   { title: "AI Assistant", href: "/student/ai-assistant", icon: MessageSquare },
 ];
@@ -48,37 +60,83 @@ const studentMenu: SidebarItem[] = [
 const coordinatorMenu: SidebarItem[] = [
   { title: "Dashboard", href: "/coordinator", icon: LayoutDashboard },
   { title: "Profile", href: "/coordinator/profile", icon: User },
-  { title: "Applications", href: "/coordinator/applications", icon: ClipboardList },
-  { title: "Student Monitoring", href: "/coordinator/monitoring", icon: Users },
-  { title: "Companies", href: "/coordinator/companies", icon: Building2 },
-  { title: "Knowledge Base", href: "/coordinator/knowledge-base", icon: Database },
+  { title: "Applications", href: "/coordinator/applications", icon: ClipboardList, permission: "applications.view" },
+  {
+    title: "Application letters",
+    href: "/coordinator/summer-training-letters",
+    icon: ScrollText,
+    permission: "summer-letter.review",
+  },
+  {
+    title: "Training reports",
+    href: "/coordinator/training-reports",
+    icon: FileCheck,
+    permissionsAny: ["reports.review", "training-report.review"],
+  },
+  { title: "Student Logbooks", href: "/coordinator/logbooks", icon: BookOpen, permission: "students.view" },
+  { title: "Student Monitoring", href: "/coordinator/monitoring", icon: Users, permission: "students.view" },
+  { title: "Companies", href: "/coordinator/companies", icon: Building2, permission: "companies.view" },
+  { title: "Knowledge Base", href: "/coordinator/knowledge-base", icon: Database, permission: "knowledge.view" },
 ];
 
 const companyMenu: SidebarItem[] = [
   { title: "Dashboard", href: "/company", icon: LayoutDashboard },
   { title: "Profile", href: "/company/profile", icon: User },
-  { title: "Review Applications", href: "/company/applications", icon: UserCheck },
-  { title: "Supervise Interns", href: "/company/interns", icon: Users },
+  { title: "Review Applications", href: "/company/applications", icon: UserCheck, permission: "applications.view" },
+  { title: "Supervise Interns", href: "/company/interns", icon: Users, permission: "interns.view" },
+  { title: "Logbook", href: "/company/logbook", icon: BookOpen, permission: "logbook.view" },
 ];
 
 const adminMenu: SidebarItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Profile", href: "/admin/profile", icon: User },
   { title: "User Management", href: "/admin/users", icon: Users },
+  { title: "Departments", href: "/admin/departments", icon: GraduationCap },
   { title: "Knowledge Base", href: "/admin/knowledge-base", icon: Database },
   { title: "System Config", href: "/admin/config", icon: Settings },
 ];
 
-const getMenuByRole = (role: UserRole, eligibilityStatus?: EligibilityStatus): SidebarItem[] => {
+const advisorMenu: SidebarItem[] = [
+  { title: "Home", href: "/advisor", icon: LayoutDashboard },
+  {
+    title: "Application letters",
+    href: "/advisor/summer-training-letters",
+    icon: ScrollText,
+  },
+  { title: "Profile", href: "/advisor/profile", icon: User },
+];
+
+const getMenuByRole = (
+  role: UserRole,
+  permissions: string[] = [],
+  coordinatorPortal?: boolean
+): SidebarItem[] => {
+  const filterByPermission = (items: SidebarItem[]) =>
+    items.filter((item) => {
+      if (item.permissionsAny && item.permissionsAny.length > 0) {
+        return hasAnyPermission({ role, permissions }, item.permissionsAny);
+      }
+      if (!item.permission) return true;
+      return hasPermission({ role, permissions }, item.permission);
+    });
+
+  const effectiveCoordinator = coordinatorPortal === true || role === "coordinator";
+
   switch (role) {
     case "student":
-      return eligibilityStatus === "eligible"
-        ? studentMenu.filter((item) => item.href !== "/student/transcript")
-        : studentMenu;
+      return studentMenu;
     case "coordinator":
-      return coordinatorMenu;
+      return filterByPermission(coordinatorMenu);
+    case "advisor":
+      return advisorMenu;
+    default:
+      if (effectiveCoordinator) return filterByPermission(coordinatorMenu);
+      break;
+  }
+
+  switch (role) {
     case "company":
-      return companyMenu;
+      return filterByPermission(companyMenu);
     case "admin":
       return adminMenu;
     default:
@@ -88,12 +146,14 @@ const getMenuByRole = (role: UserRole, eligibilityStatus?: EligibilityStatus): S
 
 interface SidebarProps {
   role: UserRole;
-  eligibilityStatus?: EligibilityStatus;
+  coordinatorPortal?: boolean;
+  permissions?: string[];
 }
 
-export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
+export function Sidebar({ role, coordinatorPortal, permissions }: SidebarProps) {
   const pathname = usePathname();
-  const menuItems = getMenuByRole(role, eligibilityStatus);
+  const dashboardHref = dashboardPathForUser(role, coordinatorPortal);
+  const menuItems = getMenuByRole(role, permissions, coordinatorPortal);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -103,22 +163,24 @@ export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
     if (pathname === href) return true;
     
     // For dashboard routes (root level), only match exactly - never match children
-    const isDashboardRoute = href === "/student" || 
-                            href === "/coordinator" || 
-                            href === "/company" || 
-                            href === "/admin";
+    const isDashboardRoute =
+      href === "/student" ||
+      href === "/coordinator" ||
+      href === "/company" ||
+      href === "/admin" ||
+      href === "/advisor";
     
     if (isDashboardRoute) {
       return false; // Dashboard routes only match exactly (handled above)
     }
     
     // For other routes, allow matching if pathname starts with href + "/"
-    // This allows /student/transcript to match /student/transcript
-    // But prevents /student from matching when on /student/transcript
+    // This allows /student/summer-training-letter to match nested routes
+    // But prevents /student from matching when on /student/summer-training-letter
     return pathname.startsWith(href + "/");
   };
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <nav className="flex-1 space-y-1 p-4 overflow-y-auto sidebar-scroll">
       {menuItems.map((item, index) => {
         const Icon = item.icon;
@@ -214,15 +276,13 @@ export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
           transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        <div className="flex h-16 items-center justify-between border-b px-4 transition-all duration-300">
-          <h2
-            className={cn(
-              "text-lg font-semibold whitespace-nowrap transition-all duration-300 ease-in-out",
-              isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100 w-auto"
-            )}
-          >
-            Internship System
-          </h2>
+        <div className="flex h-16 items-center justify-between border-b px-2 gap-2 transition-all duration-300">
+          <BrandLogo
+            href={dashboardHref}
+            variant="sidebar"
+            collapsed={isCollapsed}
+            className={cn(isCollapsed && "flex-1 justify-center px-0")}
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -245,7 +305,7 @@ export function Sidebar({ role, eligibilityStatus }: SidebarProps) {
             </div>
           </Button>
         </div>
-        <SidebarContent />
+        {renderSidebarContent()}
       </div>
     </>
   );

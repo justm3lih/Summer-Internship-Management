@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { register } from "@/lib/api";
+import { fetchStudentDepartments } from "@/lib/departments";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /** Kayıt sayfası: öğrenci bilgileri ile API'ye register isteği atar, başarılıysa öğrenci paneline yönlendirir */
 export default function RegisterPage() {
@@ -15,11 +24,29 @@ export default function RegisterPage() {
     studentId: "",
     email: "",
     name: "",
+    department: "",
     password: "",
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [deptList, setDeptList] = useState<string[]>([]);
+  const [deptLoading, setDeptLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setDeptLoading(true);
+      const list = await fetchStudentDepartments();
+      if (active) {
+        setDeptList(list);
+        setDeptLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +60,14 @@ export default function RegisterPage() {
       setError("Password must be at least 6 characters.");
       return;
     }
+    if (deptList.length === 0) {
+      setError("Bölüm listesi henüz yayımlanmamış. Lütfen koordinatörle iletişime geçin.");
+      return;
+    }
+    if (!formData.department) {
+      setError("Please select your department.");
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -40,6 +75,7 @@ export default function RegisterPage() {
         studentId: formData.studentId,
         email: formData.email,
         name: formData.name,
+        department: formData.department,
         password: formData.password,
       });
 
@@ -58,8 +94,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="w-full max-w-md">
+    <div className="auth-page-shell">
+      <BrandLogo href="/auth/login" variant="auth" />
+      <Card className="w-full max-w-md shadow-lg border-border/80">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>
@@ -107,6 +144,33 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label>Department</Label>
+              {deptLoading ? (
+                <p className="text-sm text-muted-foreground">Bölümler yükleniyor…</p>
+              ) : deptList.length === 0 ? (
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Henüz kayıt için bölüm tanımlanmadı. Koordinatörün bölüm listesini
+                  yayımlaması gerekir.
+                </p>
+              ) : (
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                >
+                  <SelectTrigger id="department" className="w-full">
+                    <SelectValue placeholder="Select your department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deptList.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
@@ -128,7 +192,11 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || deptLoading || deptList.length === 0}
+            >
               {isLoading ? "Creating account..." : "Register"}
             </Button>
             <div className="text-center text-sm">

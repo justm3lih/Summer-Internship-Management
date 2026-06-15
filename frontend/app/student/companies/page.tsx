@@ -1,19 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompanySearchFilter } from "@/components/application/company-search-filter";
-import { CompanyCard } from "@/components/common/company-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, Star, Users } from "lucide-react";
-import { demoCompanies } from "@/lib/demo-data";
 import { Company } from "@/types";
+import { getApprovedCompanies } from "@/lib/api";
 
 export default function CompaniesPage() {
-  const [filteredCompanies, setFilteredCompanies] = useState(demoCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCompanies = async () => {
+      setIsLoading(true);
+      const data = await getApprovedCompanies();
+      if (!isMounted) return;
+      setCompanies(data);
+      setFilteredCompanies(data);
+      setIsLoading(false);
+    };
+
+    loadCompanies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -25,12 +45,16 @@ export default function CompaniesPage() {
       {!selectedCompany ? (
         <>
           <CompanySearchFilter
-            companies={demoCompanies}
+            companies={companies}
             onFilterChange={setFilteredCompanies}
           />
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCompanies.length === 0 ? (
+            {isLoading ? (
+              <div className="col-span-full text-center py-12 text-muted-foreground">
+                Loading companies...
+              </div>
+            ) : filteredCompanies.length === 0 ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">
                 No companies found matching your filters
               </div>
@@ -69,9 +93,23 @@ export default function CompaniesPage() {
                       <Badge variant="secondary">{company.sector}</Badge>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
-                        <span>{company.positionsOffered} positions</span>
+                        {company.positionsOffered > 0 ? (
+                          <span>{company.remainingPositions} / {company.positionsOffered} left</span>
+                        ) : (
+                          <span>No positions set</span>
+                        )}
                       </div>
                     </div>
+                    {company.positionsOffered > 0 && company.remainingPositions === 0 && (
+                      <Badge variant="destructive" className="w-full justify-center">
+                        Quota Full
+                      </Badge>
+                    )}
+                    {company.positionsOffered === 0 && (
+                      <Badge variant="outline" className="w-full justify-center border-amber-200 text-amber-700 bg-amber-50">
+                        No Intake
+                      </Badge>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -86,6 +124,9 @@ export default function CompaniesPage() {
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary" />
                   {selectedCompany.name}
+                  {selectedCompany.remainingPositions === 0 && (
+                    <Badge variant="destructive" className="ml-2">Full</Badge>
+                  )}
                 </CardTitle>
                 <CardDescription className="flex items-center gap-2 mt-2">
                   <MapPin className="h-4 w-4" />
@@ -110,7 +151,9 @@ export default function CompaniesPage() {
               )}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
-                <span>{selectedCompany.positionsOffered} positions available</span>
+                <span className={selectedCompany.remainingPositions === 0 ? "text-destructive font-bold" : ""}>
+                  {selectedCompany.remainingPositions} positions left (Total: {selectedCompany.positionsOffered})
+                </span>
               </div>
             </div>
 

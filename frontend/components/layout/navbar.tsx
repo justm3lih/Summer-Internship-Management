@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { User, LogOut, Search, Settings, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api";
 
 interface NavbarProps {
+  /** Logo tıklanınca gidilecek panel kökü */
+  brandHref: string;
   userName?: string;
   userRole?: string;
   userProfileLink?: string;   // Profil sayfası yolu (örn. /student/profile)
@@ -16,7 +20,7 @@ interface NavbarProps {
 }
 
 /** Üst çubuk: arama, tema, kullanıcı adına tıklanınca açılan dropdown (Settings / Profile) ve çıkış */
-export function Navbar({ userName, userRole, userProfileLink, userSettingsLink }: NavbarProps) {
+export function Navbar({ brandHref, userName, userRole, userProfileLink, userSettingsLink }: NavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -56,9 +60,7 @@ export function Navbar({ userName, userRole, userProfileLink, userSettingsLink }
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-2 md:gap-4 px-4">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
-          <h1 className="text-lg md:text-xl font-bold truncate">
-            Summer Internship Management
-          </h1>
+          <BrandLogo href={brandHref} variant="navbar" className="min-w-0" />
         </div>
         
         {/* Search Bar - Always Visible */}
@@ -94,6 +96,8 @@ export function Navbar({ userName, userRole, userProfileLink, userSettingsLink }
 
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
           <ThemeToggle />
+
+          {userName && <NotificationBell />}
 
           {userName && (
             <div className="flex items-center gap-2" ref={dropdownRef}>

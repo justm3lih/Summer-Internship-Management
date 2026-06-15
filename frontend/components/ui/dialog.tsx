@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DialogProps {
@@ -67,5 +66,17 @@ export function DialogTitle({ className, children, ...props }: DialogTitleProps)
     <h2 className={cn("text-xl font-semibold", className)} {...props}>
       {children}
     </h2>
+  );
+}
+
+export function DialogTrigger({ children, asChild, ...props }: { children: React.ReactNode; asChild?: boolean }) {
+  return <>{children}</>;
+}
+
+export function DialogDescription({ className, children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn("text-sm text-muted-foreground", className)} {...props}>
+      {children}
+    </p>
   );
 }

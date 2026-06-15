@@ -1,11 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ClipboardList, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getCompanyDashboard, getMyNotifications, markNotificationAsRead } from "@/lib/api";
+import { CompanyDashboardSummary, StudentNotification } from "@/types";
+import { formatDistanceToNow } from "date-fns";
 
 export default function CompanyDashboard() {
+  const [dashboard, setDashboard] = useState<CompanyDashboardSummary | null>(null);
+  const [notifications, setNotifications] = useState<StudentNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setIsLoading(true);
+      const [data, notificationList] = await Promise.all([
+        getCompanyDashboard(),
+        getMyNotifications(),
+      ]);
+      if (!isMounted) return;
+      setDashboard(data);
+      setNotifications(notificationList);
+      setIsLoading(false);
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleMarkAsRead = (id: string) => {
+    markNotificationAsRead(id).then((result) => {
+      if (!result.success) return;
+
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification.id === id ? result.notification : notification
+        )
+      );
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -22,7 +64,7 @@ export default function CompanyDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{dashboard?.assignedInterns ?? 0}</div>
             <p className="text-xs text-muted-foreground">Active interns</p>
           </CardContent>
         </Card>
@@ -33,7 +75,7 @@ export default function CompanyDashboard() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{dashboard?.pendingApplications ?? 0}</div>
             <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
@@ -44,7 +86,7 @@ export default function CompanyDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{dashboard?.completedInternships ?? 0}</div>
             <p className="text-xs text-muted-foreground">This year</p>
           </CardContent>
         </Card>
@@ -75,19 +117,30 @@ export default function CompanyDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest updates</CardDescription>
+            <CardDescription>{isLoading ? "Loading latest updates..." : "Latest updates"}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">New application received</p>
-                  <p className="text-xs text-muted-foreground">
-                    John Doe applied for Software Developer position
-                  </p>
+              {!isLoading && notifications.length === 0 && (
+                <p className="text-sm text-muted-foreground">No recent activity yet.</p>
+              )}
+              {notifications.map((activity) => (
+                <div
+                  key={activity.id}
+                  className={`flex items-start gap-4 rounded-lg border p-3 transition-colors ${
+                    !activity.read ? "bg-primary/5 border-primary/20" : "hover:bg-accent"
+                  }`}
+                  onClick={() => !activity.read && handleMarkAsRead(activity.id)}
+                >
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground">{activity.message}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(activity.date, { addSuffix: true })}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground">2h ago</span>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
