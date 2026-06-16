@@ -69,7 +69,7 @@ public class TrainingReportWordExporterTests
             Conclusion = "SWEN300 — conclusion.",
             Appendix = "SWEN300 — appendix.",
             References = ["SWEN300 Test Kaynak 2026.", "İkinci örnek kaynak."],
-            DynamicSections =
+            WorkExperienceSections =
             [
                 new TrainingReportDynamicSectionDto
                 {
