@@ -72,10 +72,9 @@ using (var scope = app.Services.CreateScope())
     var resetKeepingAdmins = builder.Configuration.GetValue<bool>("Seed:ResetKeepingAdminsOnStartup");
     if (resetKeepingAdmins)
     {
-        SeedData.ClearOperationalDataKeepingAdminsAsync(db).GetAwaiter().GetResult();
-        SeedData.EnsureSeedDefaultAdminIfMissingAsync(db).GetAwaiter().GetResult();
+        SeedData.ResetDemoKeepingAdminAndReseedAsync(db).GetAwaiter().GetResult();
         logger.LogWarning(
-            "Seed:ResetKeepingAdminsOnStartup was true: operational data cleared; only admin users remain. Set it back to false before the next restart.");
+            "Seed:ResetKeepingAdminsOnStartup was true: database reset and fully re-seeded with custom demo data.");
     }
     else
     {
