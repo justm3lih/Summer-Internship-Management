@@ -71,6 +71,7 @@ namespace InternshipManagement.API.Data
             await EnsureSeedDemoUsersAsync(db, cancellationToken);
             await EnsureDemoStudentAdvisorLinkAsync(db, cancellationToken);
             await EnsureSeedCompaniesAsync(db, cancellationToken);
+            await EnsureSeedApplicationLettersAsync(db, cancellationToken);
             await BackfillCompanyIdsAsync(db, cancellationToken);
             await BackfillCompanyMembershipTierAsync(db, cancellationToken);
             await EnsureSeedApplicationsAsync(db, cancellationToken);
@@ -151,6 +152,43 @@ namespace InternshipManagement.API.Data
             }
         }
 
+        private static async Task EnsureSeedApplicationLettersAsync(AppDbContext db, CancellationToken cancellationToken)
+        {
+            if (await db.SummerTrainingApplicationLetters.AnyAsync(cancellationToken))
+                return;
+
+            var students = await db.Users
+                .Where(u => u.Role == "student" && u.Email.Contains("@gmail.com"))
+                .OrderBy(u => u.Email)
+                .ToListAsync(cancellationToken);
+
+            var academicPeriodKey = "2026-summer";
+            var targetStudentIndices = new[] { 0, 1, 2, 4, 5 }; // ogr1, ogr2, ogr3, ogr5, ogr6
+
+            foreach (var idx in targetStudentIndices)
+            {
+                if (idx >= students.Count) continue;
+                var student = students[idx];
+
+                db.SummerTrainingApplicationLetters.Add(new SummerTrainingApplicationLetter
+                {
+                    StudentId = student.Id,
+                    AcademicPeriodKey = academicPeriodKey,
+                    Status = SummerTrainingLetterStatuses.Approved,
+                    StudentElectronicAcceptanceAt = DateTime.UtcNow.AddDays(-89),
+                    CreatedUtc = DateTime.UtcNow.AddDays(-90),
+                    UpdatedUtc = DateTime.UtcNow.AddDays(-85),
+                    SubmittedToAdvisorAt = DateTime.UtcNow.AddDays(-88),
+                    AdvisorApprovedAt = DateTime.UtcNow.AddDays(-87),
+                    CoordinatorApprovedAt = DateTime.UtcNow.AddDays(-85),
+                    CoordinatorApproverName = "Kemal Koordinatör",
+                    CourseRowsJson = SummerTrainingCurriculum.DefaultCourseRowsJson()
+                });
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         private static async Task EnsureDemoStudentAdvisorLinkAsync(AppDbContext db, CancellationToken cancellationToken)
         {
             var advisor = await db.Users.AsNoTracking()
@@ -198,6 +236,7 @@ namespace InternshipManagement.API.Data
             await EnsureDemoStudentAdvisorLinkAsync(db, cancellationToken);
 
             await EnsureSeedCompaniesAsync(db, cancellationToken);
+            await EnsureSeedApplicationLettersAsync(db, cancellationToken);
             await BackfillCompanyIdsAsync(db, cancellationToken);
             await BackfillCompanyMembershipTierAsync(db, cancellationToken);
             await EnsureSeedApplicationsAsync(db, cancellationToken);
