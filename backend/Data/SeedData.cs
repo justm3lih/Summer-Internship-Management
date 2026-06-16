@@ -163,7 +163,7 @@ namespace InternshipManagement.API.Data
                 .ToListAsync(cancellationToken);
 
             var academicPeriodKey = "2026-summer";
-            var targetStudentIndices = new[] { 0, 1, 2, 4, 5 }; // ogr1, ogr2, ogr3, ogr5, ogr6
+            var targetStudentIndices = new[] { 0, 1, 2, 3, 4, 5 }; // ogr1, ogr2, ogr3, ogr4, ogr5, ogr6
 
             foreach (var idx in targetStudentIndices)
             {
@@ -399,7 +399,7 @@ namespace InternshipManagement.API.Data
             var teb = await db.Companies.FirstOrDefaultAsync(c => c.Name == "TEB", cancellationToken);
             var supervisor = await db.Users.FirstOrDefaultAsync(u => u.Email == "supervisor@gmail.com", cancellationToken);
 
-            if (students.Count < 5 || teb == null)
+            if (students.Count < 6 || teb == null)
                 return;
 
             // Öğrenci 1 (ogr1@gmail.com): Staj tamamen bitmiş, her şey onaylı.
@@ -464,6 +464,19 @@ namespace InternshipManagement.API.Data
                 AcceptanceLetterSubmittedAt = DateTime.UtcNow.AddDays(-88),
                 AcceptanceLetterVerifiedAt = DateTime.UtcNow.AddDays(-87),
                 CompanySupervisorUserId = supervisor?.Id,
+                TraineeJobTitle = "Software Developer Intern",
+                TraineeJobOwnWords = "Developed Web API endpoints and frontend widgets.",
+                SupervisorTitle = "Lead Software Engineer",
+                TraineeDepartmentOrDivision = "IT",
+                SupervisorDepartmentOrDivision = "Engineering",
+                SupervisorSpecialty = "Systems",
+                SupervisorAcademicDegrees = "B.Sc.",
+                SupervisorGraduatedUniversity = "METU",
+                SupervisorGraduationYear = "2014",
+                SupervisorYearsInCompany = "6 years",
+                SupervisorYearsExperience = "10 years",
+                SupervisorOverallPerformanceObservations = "Excellent work on backend APIs.",
+                SupervisorSuggestionsToUniversityAboutTrainee = "Continue teaching cloud databases.",
                 LogbookSubmittedToSupervisorAt = DateTime.UtcNow.AddDays(-19),
                 SupervisorEvaluationCompletedAt = DateTime.UtcNow.AddDays(-18),
                 LogbookSubmittedForCoordinatorReviewAt = DateTime.UtcNow.AddDays(-17),
@@ -492,10 +505,68 @@ namespace InternshipManagement.API.Data
                 AcceptanceLetterUrl = "/documents/demo-summer-acceptance-letter.pdf",
                 AcceptanceLetterSubmittedAt = DateTime.UtcNow.AddDays(-24),
                 AcceptanceLetterVerifiedAt = DateTime.UtcNow.AddDays(-23),
-                CompanySupervisorUserId = supervisor?.Id
+                CompanySupervisorUserId = supervisor?.Id,
+                TraineeJobTitle = "Software Developer Intern",
+                TraineeJobOwnWords = "Developed Web API endpoints and frontend widgets.",
+                SupervisorTitle = "Lead Software Engineer",
+                TraineeDepartmentOrDivision = "IT",
+                SupervisorDepartmentOrDivision = "Engineering",
+                SupervisorSpecialty = "Systems",
+                SupervisorAcademicDegrees = "B.Sc.",
+                SupervisorGraduatedUniversity = "METU",
+                SupervisorGraduationYear = "2014",
+                SupervisorYearsInCompany = "6 years",
+                SupervisorYearsExperience = "10 years",
+                SupervisorOverallPerformanceObservations = "Excellent work on backend APIs.",
+                SupervisorSuggestionsToUniversityAboutTrainee = "Continue teaching cloud databases.",
+                TraineeSummerSelfEval1 = 4, TraineeSummerSelfEval2 = 4, TraineeSummerSelfEval3 = 4, TraineeSummerSelfEval4 = 4, TraineeSummerSelfEval5 = 4,
+                TraineeSummerSelfEval6 = 4, TraineeSummerSelfEval7 = 4, TraineeSummerSelfEval8 = 4, TraineeSummerSelfEval9 = 4, TraineeSummerSelfEval10 = 4,
+                TraineeSummerSelfEval11 = 4, TraineeSummerSelfEval12 = 4
             };
 
-            // Öğrenci 4 (ogr4@gmail.com): Yeni kayıt, hiçbir staj kaydı yok. (application eklenmiyor)
+            // Öğrenci 4 (ogr4@gmail.com): Staj tamamen bitmiş, her şey onaylı.
+            var app4 = new Application
+            {
+                StudentId = students[3].Id,
+                CompanyId = teb.Id,
+                Status = "completed",
+                AppliedDate = DateTime.UtcNow.AddDays(-90),
+                CoordinatorPlacementApprovedAt = DateTime.UtcNow.AddDays(-85),
+                CompanyPlacementApprovedAt = DateTime.UtcNow.AddDays(-84),
+                InternshipStartDate = DateTime.UtcNow.AddDays(-60),
+                InternshipEndDate = DateTime.UtcNow.AddDays(-20),
+                CvUrl = "/documents/sample-cv.pdf",
+                MotivationLetterUrl = "/documents/sample-motivation-letter.pdf",
+                TranscriptUrl = "/documents/sample-transcript.pdf",
+                CoordinatorComments = "Staj uygunluğu ve yerleşimi koordinatör tarafından onaylandı.",
+                CompanyComments = "Başvuru TEB tarafından kabul edildi.",
+                AcceptanceLetterUrl = "/documents/demo-summer-acceptance-letter.pdf",
+                AcceptanceLetterSubmittedAt = DateTime.UtcNow.AddDays(-88),
+                AcceptanceLetterVerifiedAt = DateTime.UtcNow.AddDays(-87),
+                CompanySupervisorUserId = supervisor?.Id,
+                TraineeJobTitle = "Software Developer Intern",
+                TraineeJobOwnWords = "Developed Web API endpoints and frontend widgets.",
+                SupervisorTitle = "Lead Software Engineer",
+                TraineeDepartmentOrDivision = "IT",
+                SupervisorDepartmentOrDivision = "Engineering",
+                SupervisorSpecialty = "Systems",
+                SupervisorAcademicDegrees = "B.Sc.",
+                SupervisorGraduatedUniversity = "METU",
+                SupervisorGraduationYear = "2014",
+                SupervisorYearsInCompany = "6 years",
+                SupervisorYearsExperience = "10 years",
+                SupervisorOverallPerformanceObservations = "Excellent work on backend APIs.",
+                SupervisorSuggestionsToUniversityAboutTrainee = "Continue teaching cloud databases.",
+                LogbookSubmittedToSupervisorAt = DateTime.UtcNow.AddDays(-19),
+                SupervisorEvaluationCompletedAt = DateTime.UtcNow.AddDays(-18),
+                LogbookSubmittedForCoordinatorReviewAt = DateTime.UtcNow.AddDays(-17),
+                LogbookVerifiedByCoordinatorAt = DateTime.UtcNow.AddDays(-16),
+                SupervisorEvalPo1 = 4, SupervisorEvalPo2 = 4, SupervisorEvalPo3 = 4, SupervisorEvalPo4 = 3, SupervisorEvalPo5 = 4,
+                SupervisorEvalPo6 = 4, SupervisorEvalPo7 = 3, SupervisorEvalPo8 = 4, SupervisorEvalPo9 = 4, SupervisorEvalPo10 = 4, SupervisorEvalPo11 = 4,
+                TraineeSummerSelfEval1 = 4, TraineeSummerSelfEval2 = 4, TraineeSummerSelfEval3 = 4, TraineeSummerSelfEval4 = 4, TraineeSummerSelfEval5 = 4,
+                TraineeSummerSelfEval6 = 4, TraineeSummerSelfEval7 = 4, TraineeSummerSelfEval8 = 4, TraineeSummerSelfEval9 = 4, TraineeSummerSelfEval10 = 4,
+                TraineeSummerSelfEval11 = 4, TraineeSummerSelfEval12 = 4
+            };
 
             // Öğrenci 5 (ogr5@gmail.com): Defter bitmiş, koordinatör onayını bekliyor.
             var app5 = new Application
@@ -515,6 +586,19 @@ namespace InternshipManagement.API.Data
                 AcceptanceLetterSubmittedAt = DateTime.UtcNow.AddDays(-49),
                 AcceptanceLetterVerifiedAt = DateTime.UtcNow.AddDays(-48),
                 CompanySupervisorUserId = supervisor?.Id,
+                TraineeJobTitle = "Software Developer Intern",
+                TraineeJobOwnWords = "Developed Web API endpoints and frontend widgets.",
+                SupervisorTitle = "Lead Software Engineer",
+                TraineeDepartmentOrDivision = "IT",
+                SupervisorDepartmentOrDivision = "Engineering",
+                SupervisorSpecialty = "Systems",
+                SupervisorAcademicDegrees = "B.Sc.",
+                SupervisorGraduatedUniversity = "METU",
+                SupervisorGraduationYear = "2014",
+                SupervisorYearsInCompany = "6 years",
+                SupervisorYearsExperience = "10 years",
+                SupervisorOverallPerformanceObservations = "Excellent work on backend APIs.",
+                SupervisorSuggestionsToUniversityAboutTrainee = "Continue teaching cloud databases.",
                 LogbookSubmittedToSupervisorAt = DateTime.UtcNow.AddDays(-9),
                 SupervisorEvaluationCompletedAt = DateTime.UtcNow.AddDays(-8),
                 LogbookSubmittedForCoordinatorReviewAt = DateTime.UtcNow.AddDays(-7),
@@ -544,6 +628,19 @@ namespace InternshipManagement.API.Data
                 AcceptanceLetterSubmittedAt = DateTime.UtcNow.AddDays(-59),
                 AcceptanceLetterVerifiedAt = DateTime.UtcNow.AddDays(-58),
                 CompanySupervisorUserId = supervisor?.Id,
+                TraineeJobTitle = "Software Developer Intern",
+                TraineeJobOwnWords = "Developed Web API endpoints and frontend widgets.",
+                SupervisorTitle = "Lead Software Engineer",
+                TraineeDepartmentOrDivision = "IT",
+                SupervisorDepartmentOrDivision = "Engineering",
+                SupervisorSpecialty = "Systems",
+                SupervisorAcademicDegrees = "B.Sc.",
+                SupervisorGraduatedUniversity = "METU",
+                SupervisorGraduationYear = "2014",
+                SupervisorYearsInCompany = "6 years",
+                SupervisorYearsExperience = "10 years",
+                SupervisorOverallPerformanceObservations = "Excellent work on backend APIs.",
+                SupervisorSuggestionsToUniversityAboutTrainee = "Continue teaching cloud databases.",
                 LogbookSubmittedToSupervisorAt = DateTime.UtcNow.AddDays(-24),
                 SupervisorEvaluationCompletedAt = DateTime.UtcNow.AddDays(-23),
                 LogbookSubmittedForCoordinatorReviewAt = DateTime.UtcNow.AddDays(-22),
@@ -555,12 +652,13 @@ namespace InternshipManagement.API.Data
                 TraineeSummerSelfEval11 = 4, TraineeSummerSelfEval12 = 4
             };
 
-            db.Applications.AddRange(app1, app2, app3, app5, app6);
+            db.Applications.AddRange(app1, app2, app3, app4, app5, app6);
             await db.SaveChangesAsync(cancellationToken);
 
             // Logbook Entries
             await AddLogbookEntriesAsync(db, app1.StudentId, app1.InternshipStartDate!.Value, 30, true, supervisor?.Id, cancellationToken);
             await AddLogbookEntriesAsync(db, app2.StudentId, app2.InternshipStartDate!.Value, 30, true, supervisor?.Id, cancellationToken);
+            await AddLogbookEntriesAsync(db, app4.StudentId, app4.InternshipStartDate!.Value, 30, true, supervisor?.Id, cancellationToken);
             await AddLogbookEntriesAsync(db, app5.StudentId, app5.InternshipStartDate!.Value, 30, true, supervisor?.Id, cancellationToken);
             await AddLogbookEntriesAsync(db, app6.StudentId, app6.InternshipStartDate!.Value, 30, true, supervisor?.Id, cancellationToken);
             
@@ -570,6 +668,7 @@ namespace InternshipManagement.API.Data
             // Training Reports
             await AddTrainingReportAsync(db, app1.Id, app1.StudentId, "approved", cancellationToken);
             await AddTrainingReportAsync(db, app2.Id, app2.StudentId, "draft", cancellationToken);
+            await AddTrainingReportAsync(db, app4.Id, app4.StudentId, "approved", cancellationToken);
             await AddTrainingReportAsync(db, app6.Id, app6.StudentId, "submitted", cancellationToken);
         }
 

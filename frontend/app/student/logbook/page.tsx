@@ -750,8 +750,8 @@ export default function LogbookPage() {
               <LogbookCalendarView
                 entries={entries}
                 onDateClick={handleCalendarDateClick}
-                internshipStart={placementApplication?.internshipStartDate}
-                internshipEnd={placementApplication?.internshipEndDate}
+                internshipStart={acceptanceGateApplication?.internshipStartDate}
+                internshipEnd={acceptanceGateApplication?.internshipEndDate}
               />
             </CardContent>
           </Card>

@@ -29,17 +29,26 @@ interface LogbookCalendarViewProps {
 export function LogbookCalendarView({ entries, onDateClick, internshipStart, internshipEnd }: LogbookCalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  useEffect(() => {
-    if (internshipStart) {
-      const d = typeof internshipStart === "string" ? parseISO(internshipStart) : new Date(internshipStart);
-      if (!isNaN(d.getTime())) {
-        setCurrentMonth(d);
-      }
-    }
-  }, [internshipStart]);
+  const parseDateRobust = (val: Date | string | null | undefined): Date | null => {
+    if (val == null || val === "") return null;
+    if (val instanceof Date) return val;
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+    try {
+      const p = parseISO(val);
+      if (!isNaN(p.getTime())) return p;
+    } catch {}
+    return null;
+  };
 
-  const parsedStart = useMemo(() => internshipStart ? (typeof internshipStart === "string" ? parseISO(internshipStart) : new Date(internshipStart)) : null, [internshipStart]);
-  const parsedEnd = useMemo(() => internshipEnd ? (typeof internshipEnd === "string" ? parseISO(internshipEnd) : new Date(internshipEnd)) : null, [internshipEnd]);
+  const parsedStart = useMemo(() => parseDateRobust(internshipStart), [internshipStart]);
+  const parsedEnd = useMemo(() => parseDateRobust(internshipEnd), [internshipEnd]);
+
+  useEffect(() => {
+    if (parsedStart) {
+      setCurrentMonth(parsedStart);
+    }
+  }, [parsedStart]);
 
   const isWithinRange = (date: Date) => {
     if (!parsedStart || !parsedEnd) return true;
